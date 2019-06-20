@@ -26,7 +26,7 @@ ClpSimplex_affiliations_solver::get_n_auxiliary_variables() const
 
 std::vector<double> ClpSimplex_affiliations_solver::get_objective_coefficients() const
 {
-   const int n_primary_variables = solver->numberColumns();
+   const int n_primary_variables = get_n_primary_variables();
    const double* coeffs = solver->getObjCoefficients();
    return std::vector<double>(coeffs, coeffs + n_primary_variables);
 }

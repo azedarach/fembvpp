@@ -254,7 +254,7 @@ TEST_CASE("test objective coefficients stored correctly")
       const double max_tv_norm = -1;
 
       Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_components, n_elements));
+      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -273,7 +273,7 @@ TEST_CASE("test objective coefficients stored correctly")
       const double max_tv_norm = 5.5;
 
       Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_components, n_elements));
+      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -293,7 +293,7 @@ TEST_CASE("test objective coefficients stored correctly")
       const double max_tv_norm = -1;
 
       Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
-      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_components, n_elements).cwiseAbs());
+      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -329,7 +329,7 @@ TEST_CASE("test objective coefficients stored correctly")
       const double max_tv_norm = 23.;
 
       Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
-      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_components, n_elements).cwiseAbs());
+      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
