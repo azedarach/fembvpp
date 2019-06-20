@@ -286,7 +286,7 @@ TEST_CASE("test objective coefficients stored correctly")
 
    SECTION("returns correct value for objective coefficients with no norm constraint")
    {
-      const double tol = 1e-15;
+      const double tol = 1e-12;
       const int n_components = 3;
       const int n_elements = 3;
       const int n_samples = 12;
@@ -322,7 +322,7 @@ TEST_CASE("test objective coefficients stored correctly")
 
    SECTION("returns correct value for objective coefficients with norm constraint")
    {
-      const double tol = 1e-15;
+      const double tol = 1e-12;
       const int n_components = 4;
       const int n_elements = 10;
       const int n_samples = 50;
@@ -361,7 +361,7 @@ TEST_CASE("test objective coefficients updated correctly")
 {
    SECTION("returns correct updated values with no norm constraint")
    {
-      const double tol = 1e-15;
+      const double tol = 1e-12;
       const int n_components = 7;
       const int n_elements = 25;
       const int n_samples = 25;
@@ -398,7 +398,7 @@ TEST_CASE("test objective coefficients updated correctly")
 
    SECTION("returns correct updated values with norm constraint")
    {
-      const double tol = 1e-15;
+      const double tol = 1e-12;
       const int n_components = 2;
       const int n_elements = 505;
       const int n_samples = 505;
