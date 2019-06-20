@@ -162,3 +162,42 @@ TEST_CASE("test number of variables correctly added", "[ClpSimplex_affiliations_
       CHECK(solver.get_n_total_variables() == 2 * n_components * n_elements);
    }
 }
+
+TEST_CASE("test number of constraints correctly added", "[ClpSimplex_affiliations_solver]")
+{
+   SECTION("stores correct total number of constraints with no TV norm constraint")
+   {
+      const int n_components = 12;
+      const int n_elements = 40;
+      const int n_samples = 100;
+      const double max_tv_norm = -1;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      // ensure no trivial bounds constraints
+      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto expected_n_constraints = (n_components + 1) * n_samples;
+      CHECK(solver.get_n_constraints() == expected_n_constraints);
+   }
+
+   SECTION("stores correct total number of constraints when norm constraint imposed")
+   {
+      const int n_components = 4;
+      const int n_elements = 5;
+      const int n_samples = 200;
+      const double max_tv_norm = 2;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      // ensure no trivial bounds constraints
+      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto expected_n_constraints =
+         (n_components + 1) * n_samples + 3 * n_components * (n_samples - 1)
+         + n_components;
+      CHECK(solver.get_n_constraints() == expected_n_constraints);
+   }
+}
