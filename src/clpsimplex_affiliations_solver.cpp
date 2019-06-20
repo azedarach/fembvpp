@@ -8,6 +8,21 @@ namespace fembvpp {
 
 const double ClpSimplex_affiliations_solver::Infinity = DBL_MAX;
 
+ClpSimplex_affiliations_solver::Index_type
+ClpSimplex_affiliations_solver::get_n_primary_variables() const
+{
+   return n_components * n_elements;
+}
+
+ClpSimplex_affiliations_solver::Index_type
+ClpSimplex_affiliations_solver::get_n_auxiliary_variables() const
+{
+   if (max_tv_norm < 0) {
+      return 0;
+   } else {
+      return n_components * n_elements;
+   }
+}
 
 void ClpSimplex_affiliations_solver::initialize_equality_constraints()
 {

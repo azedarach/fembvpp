@@ -63,6 +63,11 @@ public:
    Index_type get_n_elements() const { return n_elements; }
    Index_type get_n_samples() const { return n_samples; }
 
+   Index_type get_n_primary_variables() const;
+   Index_type get_n_auxiliary_variables() const;
+   Index_type get_n_total_variables() const { return solver->getNumCols(); }
+   Index_type get_n_constraints() const { return solver->getNumRows(); }
+
    template <class DistanceMatrix>
    int update_affiliations(const DistanceMatrix&);
 
