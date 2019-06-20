@@ -96,7 +96,7 @@ ClpSimplex_affiliations_solver::ClpSimplex_affiliations_solver(
    , n_samples(G.cols()), max_tv_norm(max_tv_norm_)
 {
    basis_values = detail::stack_columns(V);
-   solver = std::make_unique<ClpSimplex>();
+   solver = std::unique_ptr<ClpSimplex>(new ClpSimplex());
 
    initialize_constraints_and_bounds();
    update_objective(G);
