@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
 
 project(FEMBVPP VERSION 0.0.1 LANGUAGES CXX)
 
@@ -66,12 +66,15 @@ if(ENABLE_COMPILER_WARNINGS)
 endif()
 
 set_target_properties(fembvpp PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS OFF
     PUBLIC_HEADER
     "${FEMBVPP_PUBLIC_HEADERS}")
 
 install(TARGETS
     fembvpp
     EXPORT FEMBVPPTargets
+    ARCHIVE DESTINATION ${FEMBVPP_INSTALL_ARCHIVE_DIR}
     PUBLIC_HEADER DESTINATION ${FEMBVPP_INSTALL_INCLUDE_DIR})
 
 add_library(FEMBVPP::fembvpp ALIAS fembvpp)
