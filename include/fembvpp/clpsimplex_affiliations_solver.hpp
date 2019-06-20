@@ -103,6 +103,12 @@ ClpSimplex_affiliations_solver::ClpSimplex_affiliations_solver(
    basis_values = detail::stack_columns(V);
    solver = std::unique_ptr<ClpSimplex>(new ClpSimplex());
 
+   if (max_tv_norm_ < 0) {
+      solver->resize(0, n_components * n_elements);
+   } else {
+      solver->resize(0, 2 * n_components * n_elements);
+   }
+
    initialize_constraints_and_bounds();
    update_objective(G);
 }
