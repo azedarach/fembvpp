@@ -63,6 +63,9 @@ public:
    Index_type get_n_elements() const { return n_elements; }
    Index_type get_n_samples() const { return n_samples; }
 
+   void set_max_iterations(int it) { max_iterations = it; }
+   int get_max_iterations() const { return max_iterations; }
+
    Index_type get_n_primary_variables() const;
    Index_type get_n_auxiliary_variables() const;
    Index_type get_n_total_variables() const { return solver->getNumCols(); }
@@ -77,10 +80,14 @@ public:
    int update_affiliations(const DistanceMatrix&);
 
 private:
+   static const double Minimize;
+   static const double Maximize;
+
    Index_type n_components{0};
    Index_type n_elements{0};
    Index_type n_samples{0};
    double max_tv_norm{-1};
+   int max_iterations{5000};
 
    std::vector<double> basis_values{};
    std::vector<Linear_constraint> equality_constraints{};
@@ -106,7 +113,9 @@ ClpSimplex_affiliations_solver::ClpSimplex_affiliations_solver(
    , n_samples(G.cols()), max_tv_norm(max_tv_norm_)
 {
    basis_values = detail::stack_columns(V);
+
    solver = std::unique_ptr<ClpSimplex>(new ClpSimplex());
+   solver->setOptimizationDirection(ClpSimplex_affiliations_solver::Minimize);
 
    if (max_tv_norm_ < 0) {
       solver->resize(0, n_components * n_elements);
@@ -150,6 +159,7 @@ int ClpSimplex_affiliations_solver::update_affiliations(
 
    update_objective(G);
 
+   solver->setMaximumIterations(max_iterations);
    const auto status = solver->initialSolve();
 
    return status;
