@@ -1,0 +1,91 @@
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+
+project(FEMBVPP VERSION 0.0.1 LANGUAGES CXX)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+
+include(FEMBVPPBuildOptions)
+
+if(NOT FEMBVPP_INSTALL_INCLUDE_DIR)
+    set(FEMBVPP_INSTALL_INCLUDE_DIR include/fembvpp
+        CACHE PATH
+        "The directory relative to CMAKE_INSTALL_PREFIX where FEMBVPP headers are installed")
+endif()
+
+if(NOT FEMBVPP_INSTALL_ARCHIVE_DIR)
+    set(FEMBVPP_INSTALL_ARCHIVE_DIR lib
+        CACHE PATH
+        "The directory relative to CMAKE_INSTALL_PREFIX where FEMBVPP libraries are installed")
+endif()
+
+if(NOT FEMBVPP_INSTALL_LIBRARY_DIR)
+    set(FEMBVPP_INSTALL_LIBRARY_DIR lib
+        CACHE PATH
+        "The directory relative to CMAKE_INSTALL_PREFIX where FEMBVPP libraries are installed")
+endif()
+
+if(NOT FEMBVPP_INSTALL_CMAKE_DIR)
+    set(FEMBVPP_INSTALL_CMAKE_DIR share/fembvpp
+        CACHE PATH
+        "The directory relative to CMAKE_INSTALL_PREFIX where FEMBVPP CMake files are installed")
+endif()
+
+if(ENABLE_COMPILER_WARNINGS)
+    include(add_cxx_flag_if_supported)
+    include(CompilerWarnings)
+endif()
+
+find_package(CoinUtils REQUIRED)
+find_package(Clp REQUIRED)
+find_package(Eigen3 3.1 REQUIRED)
+
+set(FEMBVPP_PUBLIC_HEADERS
+    include/fembvpp/clpsimplex_affiliations_solver.hpp
+    include/fembvpp/linear_constraint.hpp)
+
+add_library(fembvpp
+    src/clpsimplex_affiliations_solver.cpp
+    src/linear_constraint.cpp)
+
+target_include_directories(fembvpp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/fembvpp
+    $<INSTALL_INTERFACE:{FEMBVPP_INSTALL_INCLUDE_DIR}>
+    ${EIGEN3_INCLUDE_DIR})
+
+target_link_libraries(fembvpp PUBLIC
+    Clp::Clp
+    CoinUtils::CoinUtils)
+
+if(ENABLE_COMPILER_WARNINGS)
+    target_compile_options(fembvpp PRIVATE
+        ${CXX_WARNING_FLAGS})
+endif()
+
+set_target_properties(fembvpp PROPERTIES
+    PUBLIC_HEADER
+    "${FEMBVPP_PUBLIC_HEADERS}")
+
+install(TARGETS
+    fembvpp
+    EXPORT FEMBVPPTargets
+    PUBLIC_HEADER DESTINATION ${FEMBVPP_INSTALL_INCLUDE_DIR})
+
+add_library(FEMBVPP::fembvpp ALIAS fembvpp)
+
+export(TARGETS fembvpp
+    NAMESPACE FEMBVPP::
+    FILE "${PROJECT_BINARY_DIR}/${FEMBVPP_INSTALL_CMAKE_DIR}/FEMBVPPTargets.cmake")
+
+export(PACKAGE FEMBVPP)
+
+if(ENABLE_TESTING)
+    enable_testing()
+    add_subdirectory(test EXCLUDE_FROM_ALL)
+endif()
+
+include(FEMBVPPGenerateConfig)
+generate_fembvpp_config_files()

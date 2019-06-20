@@ -1,0 +1,29 @@
+function(generate_fembvpp_config_files)
+
+  include(CMakePackageConfigHelpers)
+
+  configure_package_config_file(
+    "${CMAKE_MODULE_PATH}/FEMBVPPConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/${FEMBVPP_INSTALL_CMAKE_DIR}/FEMBVPPConfig.cmake"
+    INSTALL_DESTINATION "${FEMBVPP_INSTALL_CMAKE_DIR}"
+    PATH_VARS
+    FEMBVPP_INSTALL_CMAKE_DIR
+    FEMBVPP_INSTALL_INCLUDE_DIR
+    )
+
+  install(FILES "${PROJECT_BINARY_DIR}/${FEMBVPP_INSTALL_CMAKE_DIR}/FEMBVPPConfig.cmake"
+    DESTINATION ${FEMBVPP_INSTALL_CMAKE_DIR})
+
+  install(EXPORT FEMBVPPTargets
+    NAMESPACE FEMBVPP::
+    DESTINATION ${FEMBVPP_INSTALL_CMAKE_DIR})
+
+  write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/${FEMBVPP_INSTALL_CMAKE_DIR}/FEMBVPPConfigVersion.cmake"
+    VERSION "${FEMBVPP_VERSION}"
+    COMPATIBILITY SameMajorVersion)
+
+  install(FILES "${PROJECT_BINARY_DIR}/${FEMBVPP_INSTALL_CMAKE_DIR}/FEMBVPPConfigVersion.cmake"
+    DESTINATION ${FEMBVPP_INSTALL_CMAKE_DIR})
+
+endfunction()

@@ -1,0 +1,15 @@
+# Config file for FEMBVPP, providing imported targets
+# for the package.
+#
+# After successful configuration the following variables
+# will be defined:
+#
+# FEMBVPP_VERSION the version number of FEMBVPP
+
+@PACKAGE_INIT@
+
+set_and_check(FEMBVPP_INCLUDE_DIRS "@PACKAGE_FEMBVPP_INSTALL_INCLUDE_DIR@")
+
+if(NOT TARGET FEMBVPP::fembvpp AND NOT FEMBVPP_BINARY_DIR)
+  include("@PACKAGE_FEMBVPP_INSTALL_CMAKE_DIR@/FEMBVPPTargets.cmake")
+endif()

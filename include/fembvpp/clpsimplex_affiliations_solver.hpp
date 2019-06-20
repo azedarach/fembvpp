@@ -1,0 +1,144 @@
+#ifndef FEMBVPP_CLPSIMPLEX_AFFILIATIONS_SOLVER_HPP_INCLUDED
+#define FEMBVPP_CLPSIMPLEX_AFFILIATIONS_SOLVER_HPP_INCLUDED
+
+/**
+ * @file clpsimplex_affiliations_solver.hpp
+ * @brief contains definition of ClpSimplex_affiliations_solver class
+ */
+
+#include "linear_constraint.hpp"
+
+#include <ClpSimplex.hpp>
+
+#include <cstddef>
+#include <stdexcept>
+#include <memory>
+#include <vector>
+
+class CoinPackedVector;
+
+namespace fembvpp {
+
+namespace detail {
+
+template <class Matrix>
+std::vector<double> stack_columns(const Matrix& A)
+{
+   const int n_rows = A.rows();
+   const int n_cols = A.cols();
+
+   std::vector<double> result(n_rows * n_cols);
+   for (int j = 0; j < n_cols; ++j) {
+      for (int i = 0; i < n_rows; ++i) {
+         result[i + j * n_rows] = A(i, j);
+      }
+   }
+   return result;
+}
+
+} // namespace detail
+
+/**
+ * @class ClpSimplex_affiliations_solver
+ * @brief solves linear program to update affiliations
+ */
+class ClpSimplex_affiliations_solver {
+public:
+   using Index_type = int;
+
+   // Constant for representing unbounded variables
+   static const double Infinity;
+
+   template <class DistanceMatrix, class BasisMatrix>
+   ClpSimplex_affiliations_solver(
+      const DistanceMatrix&, const BasisMatrix&, double);
+   ~ClpSimplex_affiliations_solver() = default;
+   ClpSimplex_affiliations_solver(const ClpSimplex_affiliations_solver&) = delete;
+   ClpSimplex_affiliations_solver(ClpSimplex_affiliations_solver&&) = default;
+   ClpSimplex_affiliations_solver& operator=(const ClpSimplex_affiliations_solver&) = delete;
+   ClpSimplex_affiliations_solver& operator=(ClpSimplex_affiliations_solver&&) = default;
+
+   double get_max_tv_norm() const { return max_tv_norm; }
+   Index_type get_n_components() const { return n_components; }
+   Index_type get_n_elements() const { return n_elements; }
+   Index_type get_n_samples() const { return n_samples; }
+
+   template <class DistanceMatrix>
+   int update_affiliations(const DistanceMatrix&);
+
+private:
+   Index_type n_components{0};
+   Index_type n_elements{0};
+   Index_type n_samples{0};
+   double max_tv_norm{-1};
+
+   std::vector<double> basis_values{};
+   std::vector<Linear_constraint> equality_constraints{};
+   std::vector<Linear_constraint> positivity_constraints{};
+   std::vector<Linear_constraint> aux_positivity_constraints{};
+   std::vector<Linear_constraint> aux_norm_constraints{};
+   std::unique_ptr<ClpSimplex> solver{nullptr};
+
+   void initialize_constraints_and_bounds();
+   void initialize_equality_constraints();
+   void initialize_basic_inequality_constraints();
+   void initialize_auxiliary_inequality_constraints();
+   void add_constraints();
+
+   template <class DistanceMatrix>
+   void update_objective(const DistanceMatrix&);
+};
+
+template <class DistanceMatrix, class BasisMatrix>
+ClpSimplex_affiliations_solver::ClpSimplex_affiliations_solver(
+   const DistanceMatrix& G, const BasisMatrix& V, double max_tv_norm_)
+   : n_components(G.rows()), n_elements(V.rows())
+   , n_samples(G.cols()), max_tv_norm(max_tv_norm_)
+{
+   basis_values = detail::stack_columns(V);
+   solver = std::make_unique<ClpSimplex>();
+
+   initialize_constraints_and_bounds();
+   update_objective(G);
+}
+
+template <class DistanceMatrix>
+void ClpSimplex_affiliations_solver::update_objective(
+   const DistanceMatrix& G)
+{
+   const auto n_variables = n_elements * n_components;
+   std::vector<double> c(n_variables, 0);
+
+   for (Index_type t = 0; t < n_samples; ++t) {
+      for (Index_type j = 0; j < n_elements; ++j) {
+         const double v = basis_values[j + t * n_elements];
+         for (Index_type i = 0; i < n_components; ++i) {
+            c[i + j * n_components] += G(i, t) * v;
+         }
+      }
+   }
+
+   for (Index_type i = 0; i < n_variables; ++i) {
+      solver->setObjectiveCoefficient(i, c[i]);
+   }
+}
+
+template <class DistanceMatrix>
+int ClpSimplex_affiliations_solver::update_affiliations(
+   const DistanceMatrix& G)
+{
+   if (G.rows() != n_components) {
+      throw std::runtime_error(
+         "number of rows does not match number of components");
+   }
+
+   update_objective(G);
+
+   const auto status = solver->initialSolve();
+
+   return status;
+}
+
+} // namespace fembvpp
+
+#endif
