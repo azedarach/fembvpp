@@ -68,6 +68,11 @@ public:
    Index_type get_n_total_variables() const { return solver->getNumCols(); }
    Index_type get_n_constraints() const { return solver->getNumRows(); }
 
+   std::vector<double> get_objective_coefficients() const;
+   template <class Matrix>
+   void get_objective_coefficients(Matrix&) const;
+   double get_objective_value() const { return solver->getObjValue(); }
+
    template <class DistanceMatrix>
    int update_affiliations(const DistanceMatrix&);
 
@@ -148,6 +153,27 @@ int ClpSimplex_affiliations_solver::update_affiliations(
    const auto status = solver->initialSolve();
 
    return status;
+}
+
+template <class Matrix>
+void ClpSimplex_affiliations_solver::get_objective_coefficients(
+   Matrix& M) const
+{
+   const std::vector<double> coeffs(get_objective_coefficients());
+
+   const int n_rows = M.rows();
+   const int n_cols = M.cols();
+   const std::size_t n_entries = n_rows * n_cols;
+   if (n_entries != coeffs.size()) {
+      throw std::runtime_error(
+         "number of matrix elements does not match number of coefficients");
+   }
+
+   for (int j = 0; j < n_cols; ++j) {
+      for (int i = 0; i < n_rows; ++i) {
+         M(i, j) = coeffs[i + j * n_components];
+      }
+   }
 }
 
 } // namespace fembvpp

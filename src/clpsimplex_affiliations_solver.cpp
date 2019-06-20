@@ -24,6 +24,13 @@ ClpSimplex_affiliations_solver::get_n_auxiliary_variables() const
    }
 }
 
+std::vector<double> ClpSimplex_affiliations_solver::get_objective_coefficients() const
+{
+   const int n_primary_variables = solver->numberColumns();
+   const double* coeffs = solver->getObjCoefficients();
+   return std::vector<double>(coeffs, coeffs + n_primary_variables);
+}
+
 void ClpSimplex_affiliations_solver::initialize_equality_constraints()
 {
    for (Index_type t = 0; t < n_samples; ++t) {

@@ -70,7 +70,7 @@ TEST_CASE("test basic construction", "[ClpSimplex_affiliations_solver]")
    }
 }
 
-TEST_CASE("test number of variables correctly added", "[ClpSimplex_affiliations_solver]")
+TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("stores correct number of primary variables with no TV norm constraint")
    {
@@ -163,7 +163,7 @@ TEST_CASE("test number of variables correctly added", "[ClpSimplex_affiliations_
    }
 }
 
-TEST_CASE("test number of constraints correctly added", "[ClpSimplex_affiliations_solver]")
+TEST_CASE("test correct number of constraints added", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("stores correct total number of constraints with no TV norm constraint")
    {
@@ -179,6 +179,25 @@ TEST_CASE("test number of constraints correctly added", "[ClpSimplex_affiliation
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
       const auto expected_n_constraints = (n_components + 1) * n_samples;
+      CHECK(solver.get_n_constraints() == expected_n_constraints);
+   }
+
+   SECTION("identifies trivial bounds when no norm constraint imposed")
+   {
+      const int n_components = 4;
+      const int n_elements = 40;
+      const int n_samples = 40;
+      const double max_tv_norm = -1;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      // all positivity constraints in this case reduce to trivial
+      // bounds, so the number of constraints is just equal to the
+      // number of stochastic constraints (i.e., n_samples)
+      const auto expected_n_constraints = n_samples;
       CHECK(solver.get_n_constraints() == expected_n_constraints);
    }
 
@@ -199,5 +218,141 @@ TEST_CASE("test number of constraints correctly added", "[ClpSimplex_affiliation
          (n_components + 1) * n_samples + 3 * n_components * (n_samples - 1)
          + n_components;
       CHECK(solver.get_n_constraints() == expected_n_constraints);
+   }
+
+   SECTION("identifies trivial bounds with norm constraint imposed")
+   {
+      const int n_components = 10;
+      const int n_elements = 100;
+      const int n_samples = 100;
+      const double max_tv_norm = 10;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      // all positivity constraints on the affiliations and auxiliary
+      // variables are now just simple bounds, with the non-trivial
+      // constraints being the stochasticity constraints at each
+      // time point (n_samples constraints), the auxiliary norm
+      // constraints (2 * n_components * (n_samples - 1) constraints)
+      // and the TV norm constraints (n_components constraints).
+      const auto expected_n_constraints =
+         n_samples + 2 * n_components * (n_samples - 1) + n_components;
+      CHECK(solver.get_n_constraints() == expected_n_constraints);
+   }
+}
+
+TEST_CASE("test objective coefficients stored correctly")
+{
+   SECTION("stores correct number of objective coefficients with no norm constraint")
+   {
+      const int n_components = 5;
+      const int n_elements = 24;
+      const int n_samples = 24;
+      const double max_tv_norm = -1;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
+      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_components, n_elements));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const int expected_n_coeffs = n_components * n_elements;
+
+      const std::vector<double> coeffs(solver.get_objective_coefficients());
+
+      CHECK(coeffs.size() == expected_n_coeffs);
+   }
+
+   SECTION("stores correct number of objective coefficients with norm constraint")
+   {
+      const int n_components = 10;
+      const int n_elements = 3;
+      const int n_samples = 54;
+      const double max_tv_norm = 5.5;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
+      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_components, n_elements));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const int expected_n_coeffs = n_components * n_elements;
+
+      const std::vector<double> coeffs(solver.get_objective_coefficients());
+
+      CHECK(coeffs.size() == expected_n_coeffs);
+   }
+
+   SECTION("returns correct value for objective coefficients with no norm constraint")
+   {
+      const double tol = 1e-15;
+      const int n_components = 3;
+      const int n_elements = 3;
+      const int n_samples = 12;
+      const double max_tv_norm = -1;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_components, n_elements).cwiseAbs());
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const Eigen::MatrixXd expected_objective_matrix = G * V.transpose();
+
+      std::vector<double> expected_objective_vector(n_components * n_elements);
+      for (int j = 0; j < n_elements; ++j) {
+         for (int i = 0; i < n_components; ++i) {
+            expected_objective_vector[i + j * n_components] =
+               expected_objective_matrix(i, j);
+         }
+      }
+
+      std::vector<double> objective_vector(solver.get_objective_coefficients());
+      for (int i = 0; i < n_components * n_elements; ++i) {
+         CHECK(std::abs(expected_objective_vector[i] - objective_vector[i]) < tol);
+      }
+
+      Eigen::MatrixXd objective_matrix(n_components, n_elements);
+      solver.get_objective_coefficients(objective_matrix);
+
+      const double max_diff = (objective_matrix - expected_objective_matrix).cwiseAbs().maxCoeff();
+
+      CHECK(max_diff < tol);
+   }
+
+   SECTION("returns correct value for objective coefficients with norm constraint")
+   {
+      const double tol = 1e-15;
+      const int n_components = 4;
+      const int n_elements = 10;
+      const int n_samples = 50;
+      const double max_tv_norm = 23.;
+
+      Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_components, n_elements).cwiseAbs());
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const Eigen::MatrixXd expected_objective_matrix = G * V.transpose();
+
+      std::vector<double> expected_objective_vector(n_components * n_elements);
+      for (int j = 0; j < n_elements; ++j) {
+         for (int i = 0; i < n_components; ++i) {
+            expected_objective_vector[i + j * n_components] =
+               expected_objective_matrix(i, j);
+         }
+      }
+
+      std::vector<double> objective_vector(solver.get_objective_coefficients());
+      for (int i = 0; i < n_components * n_elements; ++i) {
+         CHECK(std::abs(expected_objective_vector[i] - objective_vector[i]) < tol);
+      }
+
+      Eigen::MatrixXd objective_matrix(n_components, n_elements);
+      solver.get_objective_coefficients(objective_matrix);
+
+      const double max_diff = (objective_matrix - expected_objective_matrix).cwiseAbs().maxCoeff();
+
+      CHECK(max_diff < tol);
    }
 }
