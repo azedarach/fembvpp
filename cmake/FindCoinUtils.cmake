@@ -33,11 +33,13 @@ function(_coinutils_get_version _coinutils_version_h _found_major _found_minor _
 endfunction(_coinutils_get_version)
 
 
-find_path(CoinUtils_INCLUDE_DIR
-  NAMES CoinPragma.hpp
-  PATH_SUFFIXES
-  coinutils/coin
-  coin)
+if(NOT CoinUtils_INCLUDE_DIR)
+  find_path(CoinUtils_INCLUDE_DIR
+    NAMES CoinPragma.hpp
+    PATH_SUFFIXES
+    coinutils/coin
+    coin)
+endif()
 
 if(CoinUtils_INCLUDE_DIR)
   _coinutils_get_version(
@@ -48,8 +50,10 @@ if(CoinUtils_INCLUDE_DIR)
   set(CoinUtils_VERSION ${CoinUtils_VERSION_MAJOR}.${CoinUtils_VERSION_MINOR}.${CoinUtils_VERSION_PATCHLEVEL})
 endif()
 
-find_library(CoinUtils_LIBRARY
-    NAMES CoinUtils)
+if(NOT CoinUtils_LIBRARY)
+  find_library(CoinUtils_LIBRARY
+      NAMES CoinUtils)
+endif()
 
 include(FindPackageHandleStandardArgs)
 

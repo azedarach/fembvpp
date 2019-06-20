@@ -32,12 +32,13 @@ function(_clp_get_version _clp_version_h _found_major _found_minor _found_patch)
   set(${_found_patch} "${CMAKE_MATCH_1}" PARENT_SCOPE)
 endfunction(_clp_get_version)
 
-
-find_path(Clp_INCLUDE_DIR
-    NAMES ClpSimplex.hpp
-    PATH_SUFFIXES
-    clp/coin
-    coin)
+if(NOT Clp_INCLUDE_DIR)
+  find_path(Clp_INCLUDE_DIR
+      NAMES ClpSimplex.hpp
+      PATH_SUFFIXES
+      clp/coin
+      coin)
+endif()
 
 if(Clp_INCLUDE_DIR)
     _clp_get_version(
@@ -48,8 +49,10 @@ if(Clp_INCLUDE_DIR)
     set(Clp_VERSION ${Clp_VERSION_MAJOR}.${Clp_VERSION_MINOR}.${Clp_VERSION_PATCHLEVEL})
 endif()
 
-find_library(Clp_LIBRARY
-    NAMES Clp)
+if(NOT Clp_LIBRARY)
+  find_library(Clp_LIBRARY
+      NAMES Clp)
+endif()
 
 include(FindPackageHandleStandardArgs)
 
