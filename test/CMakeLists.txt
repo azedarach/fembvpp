@@ -14,6 +14,10 @@ endif()
 target_link_libraries(fembvpp_unit PRIVATE
     FEMBVPP::fembvpp)
 
+set_target_properties(fembvpp_unit PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS OFF)
+
 include(ParseAndAddCatchTests)
 ParseAndAddCatchTests(fembvpp_unit)
 
