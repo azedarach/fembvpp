@@ -14,8 +14,8 @@ TEST_CASE("test basic construction", "[ClpSimplex_affiliations_solver]")
       const int n_elements = 10;
       const int n_samples = 20;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       const double max_tv_norm = 1.;
 
@@ -31,8 +31,8 @@ TEST_CASE("test basic construction", "[ClpSimplex_affiliations_solver]")
       const int n_samples = 30;
       const double max_tv_norm = 0;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -46,8 +46,8 @@ TEST_CASE("test basic construction", "[ClpSimplex_affiliations_solver]")
       const int n_samples = 30;
       const double max_tv_norm = 0;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -61,8 +61,8 @@ TEST_CASE("test basic construction", "[ClpSimplex_affiliations_solver]")
       const int n_samples = 30;
       const double max_tv_norm = 0;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -79,8 +79,8 @@ TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_so
       const int n_samples = 100;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -94,8 +94,8 @@ TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_so
       const int n_samples = 200;
       const double max_tv_norm = 10;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -109,8 +109,8 @@ TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_so
       const int n_samples = 400;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -124,8 +124,8 @@ TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_so
       const int n_samples = 300;
       const double max_tv_norm = 12;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -139,8 +139,8 @@ TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_so
       const int n_samples = 100;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -154,8 +154,8 @@ TEST_CASE("test correct number of variables added", "[ClpSimplex_affiliations_so
       const int n_samples = 300;
       const double max_tv_norm = 23;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -172,9 +172,9 @@ TEST_CASE("test correct number of constraints added", "[ClpSimplex_affiliations_
       const int n_samples = 100;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
       // ensure no trivial bounds constraints
-      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -189,8 +189,8 @@ TEST_CASE("test correct number of constraints added", "[ClpSimplex_affiliations_
       const int n_samples = 40;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -208,9 +208,9 @@ TEST_CASE("test correct number of constraints added", "[ClpSimplex_affiliations_
       const int n_samples = 200;
       const double max_tv_norm = 2;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
       // ensure no trivial bounds constraints
-      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -227,8 +227,8 @@ TEST_CASE("test correct number of constraints added", "[ClpSimplex_affiliations_
       const int n_samples = 100;
       const double max_tv_norm = 10;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Zero(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -253,8 +253,8 @@ TEST_CASE("test objective coefficients stored correctly")
       const int n_samples = 24;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -272,8 +272,8 @@ TEST_CASE("test objective coefficients stored correctly")
       const int n_samples = 54;
       const double max_tv_norm = 5.5;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
-      Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Ones(n_components, n_samples));
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Ones(n_elements, n_samples));
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -292,8 +292,8 @@ TEST_CASE("test objective coefficients stored correctly")
       const int n_samples = 12;
       const double max_tv_norm = -1;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
-      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -328,8 +328,8 @@ TEST_CASE("test objective coefficients stored correctly")
       const int n_samples = 50;
       const double max_tv_norm = 23.;
 
-      Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
-      Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
 
       ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
 
@@ -352,6 +352,83 @@ TEST_CASE("test objective coefficients stored correctly")
       solver.get_objective_coefficients(objective_matrix);
 
       const double max_diff = (objective_matrix - expected_objective_matrix).cwiseAbs().maxCoeff();
+
+      CHECK(max_diff < tol);
+   }
+}
+
+TEST_CASE("test objective coefficients updated correctly")
+{
+   SECTION("returns correct updated values with no norm constraint")
+   {
+      const double tol = 1e-15;
+      const int n_components = 7;
+      const int n_elements = 25;
+      const int n_samples = 25;
+      const double max_tv_norm = -1;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const Eigen::MatrixXd expected_objective_matrix = G * V.transpose();
+
+      Eigen::MatrixXd initial_objective_matrix(n_components, n_elements);
+      solver.get_objective_coefficients(initial_objective_matrix);
+
+      double max_diff = (initial_objective_matrix - expected_objective_matrix).cwiseAbs().maxCoeff();
+      REQUIRE(max_diff < tol);
+
+      const Eigen::MatrixXd G2(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      max_diff = (G2 - G).cwiseAbs().maxCoeff();
+      // require matrices to differ in at least one element
+      REQUIRE(max_diff > tol);
+
+      solver.update_affiliations(G2);
+
+      const Eigen::MatrixXd expected_new_matrix = G2 * V.transpose();
+      Eigen::MatrixXd new_objective_matrix(n_components, n_elements);
+      solver.get_objective_coefficients(new_objective_matrix);
+
+      max_diff = (new_objective_matrix - expected_new_matrix).cwiseAbs().maxCoeff();
+
+      CHECK(max_diff < tol);
+   }
+
+   SECTION("returns correct updated values with norm constraint")
+   {
+      const double tol = 1e-15;
+      const int n_components = 2;
+      const int n_elements = 505;
+      const int n_samples = 505;
+      const double max_tv_norm = 4.;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Random(n_elements, n_samples).cwiseAbs());
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const Eigen::MatrixXd expected_objective_matrix = G * V.transpose();
+
+      Eigen::MatrixXd initial_objective_matrix(n_components, n_elements);
+      solver.get_objective_coefficients(initial_objective_matrix);
+
+      double max_diff = (initial_objective_matrix - expected_objective_matrix).cwiseAbs().maxCoeff();
+      REQUIRE(max_diff < tol);
+
+      const Eigen::MatrixXd G2(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      max_diff = (G2 - G).cwiseAbs().maxCoeff();
+      // require matrices to differ in at least one element
+      REQUIRE(max_diff > tol);
+
+      solver.update_affiliations(G2);
+
+      const Eigen::MatrixXd expected_new_matrix = G2 * V.transpose();
+      Eigen::MatrixXd new_objective_matrix(n_components, n_elements);
+      solver.get_objective_coefficients(new_objective_matrix);
+
+      max_diff = (new_objective_matrix - expected_new_matrix).cwiseAbs().maxCoeff();
 
       CHECK(max_diff < tol);
    }
