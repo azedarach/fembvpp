@@ -506,6 +506,8 @@ TEST_CASE("returns expected solution for test problems")
 
       const auto status = solver.update_affiliations(G);
 
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
       // in this case, optimal solution is deterministic
       // affiliation corresponding to perfect model at each
       // time

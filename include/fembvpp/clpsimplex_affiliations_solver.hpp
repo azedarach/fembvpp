@@ -46,6 +46,8 @@ class ClpSimplex_affiliations_solver {
 public:
    using Index_type = int;
 
+   enum class Status : int { SUCCESS = 0, FAIL };
+
    // Constant for representing unbounded variables
    static const double Infinity;
 
@@ -76,7 +78,7 @@ public:
    void get_objective_coefficients(Matrix&) const;
 
    template <class DistanceMatrix>
-   int update_affiliations(const DistanceMatrix&);
+   Status update_affiliations(const DistanceMatrix&);
    template <class Matrix>
    void get_affiliations(Matrix&) const;
 
@@ -152,7 +154,8 @@ void ClpSimplex_affiliations_solver::update_objective(
 }
 
 template <class DistanceMatrix>
-int ClpSimplex_affiliations_solver::update_affiliations(
+ClpSimplex_affiliations_solver::Status
+ClpSimplex_affiliations_solver::update_affiliations(
    const DistanceMatrix& G)
 {
    if (G.rows() != n_components) {
@@ -164,12 +167,17 @@ int ClpSimplex_affiliations_solver::update_affiliations(
 
    // if only one local model, solution is trivial
    if (n_components == 1) {
-      return 0;
+      return Status::SUCCESS;
    } else {
       solver->setMaximumIterations(max_iterations);
-      const auto status = solver->initialSolve();
 
-      return status;
+      solver->initialSolve();
+
+      if (solver->isProvenOptimal()) {
+         return Status::SUCCESS;
+      } else {
+         return Status::FAIL;
+      }
    }
 }
 
