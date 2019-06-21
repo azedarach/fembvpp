@@ -244,7 +244,7 @@ TEST_CASE("test correct number of constraints added", "[ClpSimplex_affiliations_
    }
 }
 
-TEST_CASE("test objective coefficients stored correctly")
+TEST_CASE("test objective coefficients stored correctly", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("stores correct number of objective coefficients with no norm constraint")
    {
@@ -357,7 +357,7 @@ TEST_CASE("test objective coefficients stored correctly")
    }
 }
 
-TEST_CASE("test objective coefficients updated correctly")
+TEST_CASE("test objective coefficients updated correctly", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("returns correct updated values with no norm constraint")
    {
@@ -434,7 +434,7 @@ TEST_CASE("test objective coefficients updated correctly")
    }
 }
 
-TEST_CASE("returns trivial solution when only one component")
+TEST_CASE("returns trivial solution when only one component", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("returns all ones for affiliations when no norm constraint imposed")
    {
@@ -483,7 +483,7 @@ TEST_CASE("returns trivial solution when only one component")
    }
 }
 
-TEST_CASE("returns expected solution for test problems")
+TEST_CASE("returns expected solution for test problems", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("returns expected solution for case of non-overlapping perfect models")
    {
@@ -556,7 +556,7 @@ TEST_CASE("returns expected solution for test problems")
    }
 }
 
-TEST_CASE("test solution satisfies constraints")
+TEST_CASE("test solution satisfies constraints", "[ClpSimplex_affiliations_solver]")
 {
    SECTION("test affiliations are non-negative when no norm constraint imposed")
    {
