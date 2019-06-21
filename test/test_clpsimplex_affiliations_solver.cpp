@@ -522,4 +522,36 @@ TEST_CASE("returns expected solution for test problems")
       const double max_diff = (obtained_Gamma - expected_Gamma).cwiseAbs().maxCoeff();
       CHECK(max_diff < tol);
    }
+
+   SECTION("returns expected solution for case of non-overlapping perfect models with no switching")
+   {
+      const double tol = 1e-15;
+      const int n_components = 2;
+      const int n_elements = 10;
+      const int n_samples = 10;
+      const double max_tv_norm = 0;
+
+      Eigen::MatrixXd G(n_components, n_samples);
+      G << 0.5, 0.2, 0.6, 0.1, 0.2, 0, 0, 0, 0, 0,
+         0, 0, 0, 0, 0, 1.2, 10, 2.3, 4.3, 5.0;
+
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      // here no switching is allowed, so the optimal solution is
+      // to stay in the model with the minimum loss
+      Eigen::MatrixXd expected_Gamma(Eigen::MatrixXd::Zero(n_components, n_samples));
+      expected_Gamma.row(0) = Eigen::VectorXd::Ones(n_samples);
+
+      Eigen::MatrixXd obtained_Gamma(n_components, n_samples);
+      solver.get_affiliations(obtained_Gamma);
+
+      const double max_diff = (obtained_Gamma - expected_Gamma).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
 }
