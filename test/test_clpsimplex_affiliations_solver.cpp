@@ -442,7 +442,7 @@ TEST_CASE("returns trivial solution when only one component")
       const int n_components = 1;
       const int n_elements = 100;
       const int n_samples = 100;
-      double max_tv_norm = -1;
+      const double max_tv_norm = -1;
 
       const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
       const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
@@ -465,7 +465,7 @@ TEST_CASE("returns trivial solution when only one component")
       const int n_components = 1;
       const int n_elements = 5;
       const int n_samples = 500;
-      double max_tv_norm = 10;
+      const double max_tv_norm = 10;
 
       const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
       const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
@@ -479,6 +479,45 @@ TEST_CASE("returns trivial solution when only one component")
       solver.get_affiliations(Gamma);
 
       const double max_diff = (Gamma - expected_Gamma).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
+}
+
+TEST_CASE("returns expected solution for test problems")
+{
+   SECTION("returns expected solution for case of non-overlapping perfect models")
+   {
+      const double tol = 1e-15;
+      const int n_components = 3;
+      const int n_elements = 10;
+      const int n_samples = 10;
+      const double max_tv_norm = -1;
+
+      // distance matrix for 3 local models in which
+      // each model exactly fits at non-overlapping times
+      Eigen::MatrixXd G(n_components, n_samples);
+      G << 0.5, 0.45, 0.65, 0, 0, 0, 0, 1.2, 0.1, 2.4,
+      0, 0, 0, 1.2, 10.2, 0.1, 5.6, 2.4, 5.3, 2.9,
+      0.1, 4.5, 2.3, 2.3, 9.8, 3.5, 1.8, 0, 0, 0;
+
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      // in this case, optimal solution is deterministic
+      // affiliation corresponding to perfect model at each
+      // time
+      Eigen::MatrixXd expected_Gamma(n_components, n_samples);
+      expected_Gamma << 0, 0, 0, 1, 1, 1, 1, 0, 0, 0,
+      1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 1, 1, 1;
+
+      Eigen::MatrixXd obtained_Gamma(n_components, n_samples);
+      solver.get_affiliations(obtained_Gamma);
+
+      const double max_diff = (obtained_Gamma - expected_Gamma).cwiseAbs().maxCoeff();
       CHECK(max_diff < tol);
    }
 }
