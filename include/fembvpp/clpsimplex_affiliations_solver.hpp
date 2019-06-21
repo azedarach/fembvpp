@@ -67,6 +67,7 @@ public:
 
    void set_max_iterations(int it) { max_iterations = it; }
    int get_max_iterations() const { return max_iterations; }
+   void set_verbosity(int v) { verbosity = v; }
 
    Index_type get_n_primary_variables() const;
    Index_type get_n_auxiliary_variables() const;
@@ -91,6 +92,7 @@ private:
    Index_type n_samples{0};
    double max_tv_norm{-1};
    int max_iterations{5000};
+   int verbosity{0};
 
    std::vector<double> basis_values{};
    std::vector<Linear_constraint> equality_constraints{};
@@ -170,6 +172,7 @@ ClpSimplex_affiliations_solver::update_affiliations(
       return Status::SUCCESS;
    } else {
       solver->setMaximumIterations(max_iterations);
+      solver->setLogLevel(verbosity);
 
       solver->initialSolve();
 
