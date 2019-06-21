@@ -1,6 +1,7 @@
 add_executable(fembvpp_unit
     catch_main.cpp
-    test_clpsimplex_affiliations_solver.cpp)
+    test_clpsimplex_affiliations_solver.cpp
+    test_random_matrix.cpp)
 
 target_include_directories(fembvpp_unit PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/catch
