@@ -7,8 +7,8 @@
 namespace fembvpp {
 
 const double ClpSimplex_affiliations_solver::Infinity = DBL_MAX;
-const double ClpSimplex_affiliations_solver::Minimize = -1;
-const double ClpSimplex_affiliations_solver::Maximize = 1;
+const double ClpSimplex_affiliations_solver::Minimize = 1;
+const double ClpSimplex_affiliations_solver::Maximize = -1;
 
 ClpSimplex_affiliations_solver::Index_type
 ClpSimplex_affiliations_solver::get_n_primary_variables() const
