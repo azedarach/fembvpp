@@ -433,3 +433,52 @@ TEST_CASE("test objective coefficients updated correctly")
       CHECK(max_diff < tol);
    }
 }
+
+TEST_CASE("returns trivial solution when only one component")
+{
+   SECTION("returns all ones for affiliations when no norm constraint imposed")
+   {
+      const double tol = 1e-15;
+      const int n_components = 1;
+      const int n_elements = 100;
+      const int n_samples = 100;
+      double max_tv_norm = -1;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      solver.update_affiliations(G);
+
+      const Eigen::MatrixXd expected_Gamma(Eigen::MatrixXd::Ones(n_components, n_samples));
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      const double max_diff = (Gamma - expected_Gamma).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
+
+   SECTION("returns all ones for affiliations when norm constraint imposed")
+   {
+      const double tol = 1e-15;
+      const int n_components = 1;
+      const int n_elements = 5;
+      const int n_samples = 500;
+      double max_tv_norm = 10;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      solver.update_affiliations(G);
+
+      const Eigen::MatrixXd expected_Gamma(Eigen::MatrixXd::Ones(n_components, n_samples));
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      const double max_diff = (Gamma - expected_Gamma).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
+}

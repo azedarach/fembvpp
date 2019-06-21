@@ -74,10 +74,11 @@ public:
    std::vector<double> get_objective_coefficients() const;
    template <class Matrix>
    void get_objective_coefficients(Matrix&) const;
-   double get_objective_value() const { return solver->getObjValue(); }
 
    template <class DistanceMatrix>
    int update_affiliations(const DistanceMatrix&);
+   template <class Matrix>
+   void get_affiliations(Matrix&) const;
 
 private:
    static const double Minimize;
@@ -123,7 +124,9 @@ ClpSimplex_affiliations_solver::ClpSimplex_affiliations_solver(
       solver->resize(0, 2 * n_components * n_elements);
    }
 
-   initialize_constraints_and_bounds();
+   if (n_components > 1) {
+      initialize_constraints_and_bounds();
+   }
    update_objective(G);
 }
 
@@ -159,10 +162,15 @@ int ClpSimplex_affiliations_solver::update_affiliations(
 
    update_objective(G);
 
-   solver->setMaximumIterations(max_iterations);
-   const auto status = solver->initialSolve();
+   // if only one local model, solution is trivial
+   if (n_components == 1) {
+      return 0;
+   } else {
+      solver->setMaximumIterations(max_iterations);
+      const auto status = solver->initialSolve();
 
-   return status;
+      return status;
+   }
 }
 
 template <class Matrix>
@@ -182,6 +190,43 @@ void ClpSimplex_affiliations_solver::get_objective_coefficients(
    for (int j = 0; j < n_cols; ++j) {
       for (int i = 0; i < n_rows; ++i) {
          M(i, j) = coeffs[i + j * n_components];
+      }
+   }
+}
+
+template <class Matrix>
+void ClpSimplex_affiliations_solver::get_affiliations(
+   Matrix& Gamma) const
+{
+   const int n_rows = Gamma.rows();
+   const int n_cols = Gamma.cols();
+
+   if (n_rows != n_components) {
+      throw std::runtime_error(
+         "number of rows does not match number of components");
+   }
+
+   if (n_cols != n_samples) {
+      throw std::runtime_error(
+         "number of columns does not match number of samples");
+   }
+
+   if (n_components == 1) {
+      for (Index_type t = 0; t < n_samples; ++t) {
+         for (Index_type i = 0; i < n_components; ++i) {
+            Gamma(i, t) = 1;
+         }
+      }
+   } else {
+      const double* sol = solver->getColSolution();
+      for (Index_type t = 0; t < n_samples; ++t) {
+         for (Index_type i = 0; i < n_components; ++i) {
+            Gamma(i, t) = 0;
+            for (Index_type j = 0; j < n_elements; ++j) {
+               Gamma(i, t) += sol[i + j * n_components] *
+                  basis_values[j + t * n_elements];
+            }
+         }
       }
    }
 }
