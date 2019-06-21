@@ -555,3 +555,224 @@ TEST_CASE("returns expected solution for test problems")
       CHECK(max_diff < tol);
    }
 }
+
+TEST_CASE("test solution satisfies constraints")
+{
+   SECTION("test affiliations are non-negative when no norm constraint imposed")
+   {
+      const int n_components = 4;
+      const int n_elements = 10;
+      const int n_samples = 100;
+      const double max_tv_norm = -1;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+
+      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      for (int i = 0; i < n_elements; ++i) {
+         V.block(i, 10 * i, 1, 10) = Eigen::VectorXd::Ones(10);
+      }
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      CHECK((Gamma.array() >= 0).all());
+   }
+
+   SECTION("test affiliations are stochastic when no norm constraint imposed")
+   {
+      const double tol = 1e-12;
+      const int n_components = 5;
+      const int n_elements = 300;
+      const int n_samples = 300;
+      const double max_tv_norm = -1;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      const Eigen::RowVectorXd col_sums = Gamma.colwise().sum();
+      const double max_diff = (col_sums - Eigen::RowVectorXd::Ones(n_samples)).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
+
+   SECTION("test affiliations are non-negative when no switching imposed")
+   {
+      const int n_components = 2;
+      const int n_elements = 4;
+      const int n_samples = 200;
+      const double max_tv_norm = 0;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+
+      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      for (int i = 0; i < n_elements; ++i) {
+         V.block(i, 50 * i, 1, 50) = Eigen::VectorXd::Ones(50);
+      }
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      CHECK((Gamma.array() >= 0).all());
+   }
+
+   SECTION("test affiliations are stochastic when no switching imposed")
+   {
+      const double tol = 1e-12;
+      const int n_components = 4;
+      const int n_elements = 6;
+      const int n_samples = 60;
+      const double max_tv_norm = 0;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+
+      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      for (int i = 0; i < n_elements; ++i) {
+         V.block(i, 10 * i, 1, 10) = Eigen::VectorXd::Ones(10);
+      }
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      const Eigen::RowVectorXd col_sums = Gamma.colwise().sum();
+      const double max_diff = (col_sums - Eigen::RowVectorXd::Ones(n_samples)).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
+
+   SECTION("test affiliations respect norm constraint when no switching imposed")
+   {
+      const double tol = 1e-12;
+      const int n_components = 5;
+      const int n_elements = 50;
+      const int n_samples = 50;
+      const double max_tv_norm = 0;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      Eigen::VectorXd norms(Eigen::VectorXd::Zero(n_components));
+      for (int t = 0; t < n_samples - 1; ++t) {
+         norms += (Gamma.col(t + 1) - Gamma.col(t)).cwiseAbs();
+      }
+
+      CHECK((norms.array() <= max_tv_norm + tol).all());
+   }
+
+   SECTION("test affiliations are non-negative when norm constraint imposed")
+   {
+      const int n_components = 2;
+      const int n_elements = 500;
+      const int n_samples = 500;
+      const double max_tv_norm = 10;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+      const Eigen::MatrixXd V(Eigen::MatrixXd::Identity(n_elements, n_samples));
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      CHECK((Gamma.array() >= 0).all());
+   }
+
+   SECTION("test affiliations are stochastic when norm constraint imposed")
+   {
+      const double tol = 1e-12;
+      const int n_components = 10;
+      const int n_elements = 25;
+      const int n_samples = 50;
+      const double max_tv_norm = 20;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+
+      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      for (int i = 0; i < n_elements; ++i) {
+         V.block(i, 2 * i, 1, 2) = Eigen::VectorXd::Ones(2);
+      }
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      const Eigen::RowVectorXd col_sums = Gamma.colwise().sum();
+      const double max_diff = (col_sums - Eigen::RowVectorXd::Ones(n_samples)).cwiseAbs().maxCoeff();
+      CHECK(max_diff < tol);
+   }
+
+   SECTION("test affiliations satisfy norm constraint when norm constraint imposed")
+   {
+      const double tol = 1e-12;
+      const int n_components = 4;
+      const int n_elements = 30;
+      const int n_samples = 90;
+      const double max_tv_norm = 5;
+
+      const Eigen::MatrixXd G(Eigen::MatrixXd::Random(n_components, n_samples).cwiseAbs());
+
+      Eigen::MatrixXd V(Eigen::MatrixXd::Zero(n_elements, n_samples));
+      for (int i = 0; i < n_elements; ++i) {
+         V.block(i, 3 * i, 1, 3) = Eigen::VectorXd::Ones(3);
+      }
+
+      ClpSimplex_affiliations_solver solver(G, V, max_tv_norm);
+
+      const auto status = solver.update_affiliations(G);
+
+      REQUIRE(status == ClpSimplex_affiliations_solver::Status::SUCCESS);
+
+      Eigen::MatrixXd Gamma(n_components, n_samples);
+      solver.get_affiliations(Gamma);
+
+      Eigen::VectorXd norms(Eigen::VectorXd::Zero(n_components));
+      for (int t = 0; t < n_samples - 1; ++t) {
+         norms += (Gamma.col(t + 1) - Gamma.col(t)).cwiseAbs();
+      }
+
+      CHECK((norms.array() <= max_tv_norm + tol).all());
+   }
+}
