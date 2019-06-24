@@ -84,7 +84,7 @@ bool update_kmeans_parameters(
       }
    }
 
-   Theta = Gamma.transpose() * X;
+   Theta = X * Gamma.transpose();
    for (int j = 0; j < n_components; ++j) {
       for (int i = 0; i < n_features; ++i) {
          Theta(i, j) /= normalizations[j];
