@@ -18,6 +18,8 @@ namespace fembvpp {
 
 namespace detail {
 
+bool check_convergence(double, double, double);
+
 template <class DataMatrix, class AffiliationsMatrix, class ParametersMatrix,
           class Generator>
 void random_initialization(
@@ -90,20 +92,6 @@ bool update_kmeans_parameters(
    }
 
    return true;
-}
-
-bool check_convergence(double old_cost, double new_cost, double tolerance)
-{
-   using std::abs;
-
-   const double cost_delta = abs(old_cost - new_cost);
-
-   const double min_cost = abs(old_cost) > abs(new_cost) ? new_cost : old_cost;
-   const double max_cost = abs(old_cost) > abs(new_cost) ? old_cost : new_cost;
-
-   const double rel_cost = 1 - abs(min_cost / max_cost);
-
-   return cost_delta < tolerance || rel_cost < tolerance;
 }
 
 template <class DataMatrix, class AffiliationsMatrix, class ParametersMatrix,
