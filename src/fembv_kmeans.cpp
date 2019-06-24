@@ -6,7 +6,7 @@ namespace fembvpp {
 
 namespace detail {
 
-bool check_convergence(double old_cost, double new_cost, double tolerance)
+bool check_fembv_kmeans_convergence(double old_cost, double new_cost, double tolerance)
 {
    using std::abs;
 

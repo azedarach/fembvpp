@@ -42,14 +42,19 @@ endif()
 find_package(CoinUtils REQUIRED)
 find_package(Clp REQUIRED)
 find_package(Eigen3 3.1 REQUIRED)
+find_package(NLopt REQUIRED)
 
 set(FEMBVPP_PUBLIC_HEADERS
     include/fembvpp/clpsimplex_affiliations_solver.hpp
+    include/fembvpp/fembv_bin.hpp
+    include/fembvpp/fembv_bin_local_model.hpp
     include/fembvpp/fembv_kmeans.hpp
     include/fembvpp/linear_constraint.hpp)
 
 add_library(fembvpp
     src/clpsimplex_affiliations_solver.cpp
+    src/fembv_bin.cpp
+    src/fembv_bin_local_model.cpp
     src/fembv_kmeans.cpp
     src/linear_constraint.cpp)
 
@@ -60,7 +65,8 @@ target_include_directories(fembvpp PUBLIC
 
 target_link_libraries(fembvpp PUBLIC
     Clp::Clp
-    CoinUtils::CoinUtils)
+    CoinUtils::CoinUtils
+    NLopt::NLopt)
 
 if(ENABLE_COMPILER_WARNINGS)
     target_compile_options(fembvpp PRIVATE

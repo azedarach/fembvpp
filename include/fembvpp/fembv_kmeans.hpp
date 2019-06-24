@@ -12,17 +12,18 @@
 #include <Eigen/Core>
 
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 namespace fembvpp {
 
 namespace detail {
 
-bool check_convergence(double, double, double);
+bool check_fembv_kmeans_convergence(double, double, double);
 
 template <class DataMatrix, class AffiliationsMatrix, class ParametersMatrix,
           class Generator>
-void random_initialization(
+void fembv_kmeans_random_initialization(
    const DataMatrix& X, AffiliationsMatrix& Gamma, ParametersMatrix& Theta,
    Generator& generator)
 {
@@ -54,8 +55,8 @@ double fembv_kmeans_cost(
 }
 
 template <class DataMatrix, class ParametersMatrix, class DistanceMatrix>
-void fill_distance_matrix(const DataMatrix& X, const ParametersMatrix& Theta,
-                          DistanceMatrix& G)
+void fill_fembv_kmeans_distance_matrix(
+   const DataMatrix& X, const ParametersMatrix& Theta, DistanceMatrix& G)
 {
    const int n_samples = X.cols();
    const int n_components = Theta.cols();
@@ -115,7 +116,7 @@ fembv_kmeans_subspace(
          parameters_success = update_kmeans_parameters(X, Gamma, Theta);
       }
 
-      fill_distance_matrix(X, Theta, G);
+      fill_fembv_kmeans_distance_matrix(X, Theta, G);
 
       const auto gamma_status = gamma_solver.update_affiliations(G);
       if (static_cast<int>(gamma_status) == 0) {
@@ -135,7 +136,7 @@ fembv_kmeans_subspace(
          std::cout << "Cost ratio: " << new_cost / initial_cost << '\n';
       }
 
-      converged = check_convergence(old_cost, new_cost, tolerance);
+      converged = check_fembv_kmeans_convergence(old_cost, new_cost, tolerance);
 
       old_cost = new_cost;
 
@@ -207,7 +208,7 @@ fembv_kmeans(
          "number of samples");
    }
 
-   detail::fill_distance_matrix(X, Theta, G);
+   detail::fill_fembv_kmeans_distance_matrix(X, Theta, G);
 
    ClpSimplex_affiliations_solver gamma_solver(G, V, parameters.max_tv_norm);
    gamma_solver.set_max_iterations(parameters.max_iterations);
@@ -290,7 +291,7 @@ bool FEMBVKMeans::fit(const DataMatrix& X, Generator& generator)
 
    affiliations = Eigen::MatrixXd(n_components, n_samples);
    parameters = Eigen::MatrixXd(n_features, n_components);
-   detail::random_initialization(X, affiliations, parameters, generator);
+   detail::fembv_kmeans_random_initialization(X, affiliations, parameters, generator);
 
    const auto result = fembv_kmeans(
       X, affiliations, parameters, G, V, 
