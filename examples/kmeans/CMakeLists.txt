@@ -11,6 +11,10 @@ if(ENABLE_COMPILER_WARNINGS)
         PRIVATE "${CXX_WARNING_FLAGS}")
 endif()
 
+set_target_properties(run_fembv_kmeans PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS OFF)
+
 add_executable(FEMBVPP::run_fembv_kmeans ALIAS run_fembv_kmeans)
 
 add_dependencies(examples run_fembv_kmeans)
