@@ -20,8 +20,8 @@
 using namespace fembvpp;
 
 struct KMeans_options {
-   int n_samples{1000};
-   int n_switches{3};
+   int n_samples{6000};
+   int n_switches{2};
    std::string data_output_file{""};
    std::string true_affiliations_output_file{""};
    bool verbose{false};
@@ -32,7 +32,7 @@ void print_usage()
    std::cout <<
       "Usage: run_fembv_kmeans [OPTION]\n\n"
       "Run FEM-BV-k-means on example data.\n\n"
-      "Example: run_fembv_kmeans -c 3 -s 3\n\n"
+      "Example: run_fembv_kmeans -l 6000 -s 2\n\n"
       "Options:\n"
       "  -d, --data-output-file=FILE                name of file to"
       "                                             write data to\n"
