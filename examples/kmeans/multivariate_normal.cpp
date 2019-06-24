@@ -4,6 +4,8 @@
 
 #include <stdexcept>
 
+namespace fembvpp {
+
 Multivariate_normal_distribution::Multivariate_normal_distribution(
    const Eigen::VectorXd& mean_,
    const Eigen::MatrixXd& covariance_)
@@ -27,3 +29,5 @@ Multivariate_normal_distribution::Multivariate_normal_distribution(
 
    transform = solver.eigenvectors() * evals.cwiseSqrt().asDiagonal();
 }
+
+} // namespace fembvpp

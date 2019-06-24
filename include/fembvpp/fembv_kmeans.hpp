@@ -89,7 +89,7 @@ bool update_kmeans_parameters(
    return true;
 }
 
-   bool check_convergence(double old_cost, double new_cost, double tolerance)
+bool check_convergence(double old_cost, double new_cost, double tolerance)
 {
    using std::abs;
 

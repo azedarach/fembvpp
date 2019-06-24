@@ -85,6 +85,8 @@ export(TARGETS fembvpp
 
 export(PACKAGE FEMBVPP)
 
+add_subdirectory(examples EXCLUDE_FROM_ALL)
+
 if(ENABLE_TESTING)
     enable_testing()
     add_subdirectory(test EXCLUDE_FROM_ALL)

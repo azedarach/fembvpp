@@ -5,6 +5,8 @@
 
 #include <random>
 
+namespace fembvpp {
+
 class Multivariate_normal_distribution {
 public:
    Multivariate_normal_distribution(
@@ -22,7 +24,7 @@ private:
 
 template <class Generator>
 Eigen::VectorXd Multivariate_normal_distribution::operator()(
-   Generator& generator)
+   Generator& generator) const
 {
    std::normal_distribution<> dist(0., 1.);
 
@@ -34,5 +36,7 @@ Eigen::VectorXd Multivariate_normal_distribution::operator()(
 
    return mean + transform * z;
 }
+
+} // namespace fembvpp
 
 #endif
