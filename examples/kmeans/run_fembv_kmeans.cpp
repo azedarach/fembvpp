@@ -3,6 +3,7 @@
  * @brief example demonstrating FEM-BV-k-means algorithm
  */
 
+#include "fembv_kmeans.hpp"
 #include "multivariate_normal.hpp"
 
 #include <Eigen/Core>
@@ -20,10 +21,15 @@
 using namespace fembvpp;
 
 struct KMeans_options {
+   int n_components{2};
    int n_samples{6000};
    int n_switches{2};
+   int n_init{100};
+   double max_tv_norm{2};
    std::string data_output_file{""};
    std::string true_affiliations_output_file{""};
+   std::string parameters_output_file{""};
+   std::string affiliations_output_file{""};
    bool verbose{false};
 };
 
@@ -34,10 +40,17 @@ void print_usage()
       "Run FEM-BV-k-means on example data.\n\n"
       "Example: run_fembv_kmeans -l 6000 -s 2\n\n"
       "Options:\n"
+      "  -a, --affiliations-output-file=FILE        name of file to write FEM-BV\n"
+      "                                             affiliations to\n"
+      "  -c, --max-tv-norm=MAX_TV_NORM              TV norm upper bound\n"
       "  -d, --data-output-file=FILE                name of file to"
       "                                             write data to\n"
       "  -h, --help                                 print this help message\n"
+      "  -i, --n-init=N_INIT                        number of initializations\n"
+      "  -k, --n-components=N_COMPONENTS            number of FEM-BV components\n"
       "  -l, --n-samples=N_SAMPLES                  length of time-series\n"
+      "  -p, --parameters-output-file=FILE          name of file to write FEM-BV\n"
+      "                                             parameters to\n"
       "  -s, --n-switches=N_SWITCHES                number of switches\n"
       "  -t, --true-affiliations-output-file=FILE   name of file to"
       "                                             write true affiliations to\n"
@@ -74,6 +87,78 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
       if (opt == "-h" || opt == "--help") {
          print_usage();
          exit(EXIT_SUCCESS);
+      }
+
+      if (opt == "-c") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-c' given but norm bound not provided");
+         }
+         const std::string max_tv_norm(argv[i++]);
+         if (starts_with(max_tv_norm, "-")) {
+            throw std::runtime_error(
+               "-c' given but norm bound not provided");
+         }
+         options.max_tv_norm = std::stod(max_tv_norm);
+         continue;
+      }
+
+      if (starts_with(opt, "--max-tv-norm=")) {
+         const std::string max_tv_norm = get_option_value(opt);
+         if (max_tv_norm.empty()) {
+            throw std::runtime_error(
+               "--max_tv_norm=' given but norm bound not provided");
+         }
+         options.max_tv_norm = std::stod(max_tv_norm);
+         continue;
+      }
+
+      if (opt == "-i") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-i' given but number of repetitions not provided");
+         }
+         const std::string n_init(argv[i++]);
+         if (starts_with(n_init, "-")) {
+            throw std::runtime_error(
+               "-i' given but number of repetitions not provided");
+         }
+         options.n_init = std::stoi(n_init);
+         continue;
+      }
+
+      if (starts_with(opt, "--n-init=")) {
+         const std::string n_init = get_option_value(opt);
+         if (n_init.empty()) {
+            throw std::runtime_error(
+               "--n-init=' given but number of repetitions not provided");
+         }
+         options.n_init = std::stoi(n_init);
+         continue;
+      }
+
+      if (opt == "-k") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-k' given but number of components not provided");
+         }
+         const std::string n_components(argv[i++]);
+         if (starts_with(n_components, "-")) {
+            throw std::runtime_error(
+               "-k' given but number of components not provided");
+         }
+         options.n_components = std::stoi(n_components);
+         continue;
+      }
+
+      if (starts_with(opt, "--n-components=")) {
+         const std::string n_components = get_option_value(opt);
+         if (n_components.empty()) {
+            throw std::runtime_error(
+               "--n-components=' given but number of components not provided");
+         }
+         options.n_components = std::stoi(n_components);
+         continue;
       }
 
       if (opt == "-s") {
@@ -173,6 +258,56 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
          continue;
       }
 
+      if (opt == "-a") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-a' given but no output file name provided");
+         }
+         const std::string filename(argv[i++]);
+         if (starts_with(filename, "-") && filename != "-") {
+            throw std::runtime_error(
+               "'-a' given but no output file name provided");
+         }
+         options.affiliations_output_file = filename;
+         continue;
+      }
+
+      if (starts_with(opt, "--affiliations-output-file=")) {
+         const std::string filename = get_option_value(opt);
+         if (filename.empty()) {
+            throw std::runtime_error(
+               "'--affiliations-output-file=' given but "
+               "no output file name provided");
+         }
+         options.affiliations_output_file = filename;
+         continue;
+      }
+
+      if (opt == "-p") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-p' given but no output file name provided");
+         }
+         const std::string filename(argv[i++]);
+         if (starts_with(filename, "-") && filename != "-") {
+            throw std::runtime_error(
+               "'-p' given but no output file name provided");
+         }
+         options.parameters_output_file = filename;
+         continue;
+      }
+
+      if (starts_with(opt, "--parameters-output-file=")) {
+         const std::string filename = get_option_value(opt);
+         if (filename.empty()) {
+            throw std::runtime_error(
+               "'--parameters-output-file=' given but "
+               "no output file name provided");
+         }
+         options.parameters_output_file = filename;
+         continue;
+      }
+
       if (opt == "-v" || opt == "--verbose") {
          options.verbose = true;
          continue;
@@ -221,6 +356,44 @@ void generate_data(int n_switches, int n_clusters,
       Gamma(cluster_assignments[t], t) = 1;
       X.col(t) = distributions[cluster_assignments[t]](generator);
    }
+}
+
+template <class Generator>
+std::tuple<bool, Eigen::MatrixXd, Eigen::MatrixXd>
+run_fembv_kmeans(const Eigen::MatrixXd& X, int n_components,
+                 double max_tv_norm, int n_init, bool verbose,
+                 Generator& generator)
+{
+   const int n_features = X.rows();
+   const int n_samples = X.cols();
+
+   double min_cost = -1;
+   Eigen::MatrixXd best_parameters(
+      Eigen::MatrixXd::Zero(n_features, n_components));
+   Eigen::MatrixXd best_affiliations(
+      Eigen::MatrixXd::Zero(n_components, n_samples));
+   bool has_best_fit = false;
+   for (int i = 0; i < n_init; ++i) {
+      FEMBVKMeans model(n_components, max_tv_norm);
+
+      if (verbose) {
+         model.set_verbosity(1);
+      }
+
+      const bool success = model.fit(X, generator);
+      if (success) {
+         has_best_fit = true;
+      }
+
+      const auto cost = model.get_cost();
+
+      if (success && (cost < min_cost || i == 0)) {
+         best_parameters = model.get_parameters();
+         best_affiliations = model.get_affiliations();
+      }
+   }
+
+   return std::make_tuple(has_best_fit, best_parameters, best_affiliations);
 }
 
 void write_header_line(
@@ -299,6 +472,17 @@ void write_affiliations(
    write_csv(output_file, Gamma, fields);
 }
 
+void write_fembv_parameters(
+   const std::string& output_file, const Eigen::MatrixXd& Theta)
+{
+   const int n_fields = Theta.rows();
+   std::vector<std::string> fields(n_fields);
+   for (int i = 0; i < n_fields; ++i) {
+      fields[i] = "x" + std::to_string(i);
+   }
+   write_csv(output_file, Theta, fields);
+}
+
 int main(int argc, const char* argv[])
 {
    const int seed = 0;
@@ -348,6 +532,11 @@ int main(int argc, const char* argv[])
       exit(EXIT_FAILURE);
    }
 
+   if (options.n_init < 1) {
+      std::cerr << "Error: number of repetitions must be at least one\n";
+      exit(EXIT_FAILURE);
+   }
+
    Eigen::MatrixXd data(n_dims, options.n_samples);
    Eigen::MatrixXd true_affiliations(n_clusters, options.n_samples);
 
@@ -361,6 +550,27 @@ int main(int argc, const char* argv[])
    if (!options.true_affiliations_output_file.empty()) {
       write_affiliations(options.true_affiliations_output_file,
                          true_affiliations);
+   }
+
+   const auto fembv_result = run_fembv_kmeans(
+      data, options.n_components, options.max_tv_norm,
+      options.n_init, options.verbose, generator);
+
+   const bool success = std::get<0>(fembv_result);
+   if (!success) {
+      std::cerr << "Error: failed to fit FEM-BV model\n";
+      exit(EXIT_FAILURE);
+   }
+
+   const Eigen::MatrixXd parameters(std::get<1>(fembv_result));
+   const Eigen::MatrixXd affiliations(std::get<2>(fembv_result));
+
+   if (!options.parameters_output_file.empty()) {
+      write_fembv_parameters(options.parameters_output_file, parameters);
+   }
+
+   if (!options.affiliations_output_file.empty()) {
+      write_affiliations(options.affiliations_output_file, affiliations);
    }
 
    return 0;

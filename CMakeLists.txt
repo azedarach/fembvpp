@@ -45,10 +45,12 @@ find_package(Eigen3 3.1 REQUIRED)
 
 set(FEMBVPP_PUBLIC_HEADERS
     include/fembvpp/clpsimplex_affiliations_solver.hpp
+    include/fembvpp/fembv_kmeans.hpp
     include/fembvpp/linear_constraint.hpp)
 
 add_library(fembvpp
     src/clpsimplex_affiliations_solver.cpp
+    src/fembv_kmeans.cpp
     src/linear_constraint.cpp)
 
 target_include_directories(fembvpp PUBLIC
