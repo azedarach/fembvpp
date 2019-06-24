@@ -60,10 +60,10 @@ void fill_distance_matrix(const DataMatrix& X, const ParametersMatrix& Theta,
    const int n_samples = X.cols();
    const int n_components = Theta.cols();
 
-   for (int j = 0; j < n_samples; ++j) {
+   for (int t = 0; t < n_samples; ++t) {
       for (int i = 0; i < n_components; ++i) {
-         const auto dist = (X.col(i) - Theta.col(j)).norm();
-         G(i, j) = dist * dist;
+         const auto dist = (X.col(t) - Theta.col(i)).norm();
+         G(i, t) = dist * dist;
       }
    }
 }
