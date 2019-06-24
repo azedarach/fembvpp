@@ -128,7 +128,7 @@ fembv_kmeans_subspace(
       const auto new_cost = fembv_kmeans_cost(Gamma, G);
 
       if (verbosity > 0) {
-         std::cout << "Iteration " << n_iter << '\n';
+         std::cout << "Iteration " << n_iter + 1 << '\n';
          std::cout << "Current cost: " << old_cost << '\n';
          std::cout << "Updated cost: " << new_cost << '\n';
          std::cout << "Cost increment: " << new_cost - old_cost << '\n';
