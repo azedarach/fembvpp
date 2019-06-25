@@ -376,13 +376,14 @@ public:
    template <class OutcomesVector, class PredictorsMatrix>
    Eigen::MatrixXd transform(const OutcomesVector&, const PredictorsMatrix&) const;
 
-   void set_epsilon(double e) { epsilon = e; }
+   void set_regularization(double e) { epsilon = e; }
 
    void set_max_iterations(std::size_t i) { max_iterations = i; }
    void set_tolerance(double t) { tolerance = t; }
    void set_verbosity(int v) { verbosity = v; }
 
    double get_cost() const { return cost; }
+   double get_log_likelihood_bound() const { return log_likelihood_bound; }
    std::size_t get_n_iter() const { return n_iter; }
    const std::vector<FEMBVBin_local_model>& get_parameters() const { return models; }
    const Eigen::MatrixXd& get_affiliations() const { return affiliations; }
@@ -396,9 +397,14 @@ private:
    double tolerance{1e-6};
    int verbosity{0};
    double cost{-1};
+   double log_likelihood_bound{-1};
    std::size_t n_iter{0};
    std::vector<FEMBVBin_local_model> models{};
    Eigen::MatrixXd affiliations{};
+
+   template <class OutcomesVector, class PredictorsMatrix>
+   double calculate_log_likelihood_bound(
+      const OutcomesVector&, const PredictorsMatrix&) const;
 };
 
 template <class OutcomesVector, class PredictorsMatrix, class Generator>
@@ -433,6 +439,8 @@ bool FEMBVBin::fit(const OutcomesVector& Y, const PredictorsMatrix& X, Generator
    n_iter = std::get<1>(result);
    cost = std::get<2>(result);
 
+   log_likelihood_bound = calculate_log_likelihood_bound(Y, X);
+
    return std::get<0>(result);
 }
 
@@ -462,6 +470,24 @@ Eigen::MatrixXd FEMBVBin::transform(const OutcomesVector& Y, const PredictorsMat
    }
 
    return local_affiliations;
+}
+
+template <class OutcomesVector, class PredictorsMatrix>
+double FEMBVBin::calculate_log_likelihood_bound(
+   const OutcomesVector& Y, const PredictorsMatrix& X) const
+{
+   using std::log;
+
+   const int n_samples = Y.size();
+
+   double bound = 0;
+   for (int t = 0; t < n_samples; ++t) {
+      for (int i = 0; i < n_components; ++i) {
+         bound += affiliations(i, t) * models[i].loss(Y(t), X.col(t));
+      }
+   }
+
+   return bound;
 }
 
 } // namespace fembvpp
