@@ -163,6 +163,7 @@ fembv_kmeans_subspace(
 struct FEMBVKMeans_parameters {
    double max_tv_norm{-1};
    std::size_t max_iterations{1000};
+   int max_affiliations_iterations{10000};
    double tolerance{1e-8};
    bool update_parameters{true};
    int verbosity{0};
@@ -211,7 +212,7 @@ fembv_kmeans(
    detail::fill_fembv_kmeans_distance_matrix(X, Theta, G);
 
    ClpSimplex_affiliations_solver gamma_solver(G, V, parameters.max_tv_norm);
-   gamma_solver.set_max_iterations(parameters.max_iterations);
+   gamma_solver.set_max_iterations(parameters.max_affiliations_iterations);
    gamma_solver.set_verbosity(parameters.verbosity);
 
    const auto result = detail::fembv_kmeans_subspace(
@@ -264,6 +265,7 @@ private:
    int n_components{2};
    double max_tv_norm{-1};
    std::size_t max_iterations{1000};
+   int max_affiliations_iterations{10000};
    double tolerance{1e-6};
    int verbosity{0};
    double cost{-1};
@@ -281,6 +283,7 @@ bool FEMBVKMeans::fit(const DataMatrix& X, Generator& generator)
    FEMBVKMeans_parameters kmeans_parameters;
    kmeans_parameters.max_tv_norm = max_tv_norm;
    kmeans_parameters.max_iterations = max_iterations;
+   kmeans_parametesrs.max_affiliations_iterations = max_affiliations_iterations;
    kmeans_parameters.tolerance = tolerance;
    kmeans_parameters.update_parameters = true;
    kmeans_parameters.verbosity = verbosity;

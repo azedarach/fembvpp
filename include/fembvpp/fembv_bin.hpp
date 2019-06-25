@@ -286,6 +286,7 @@ fembv_bin_subspace(
 struct FEMBVBin_parameters {
    double max_tv_norm{-1};
    std::size_t max_iterations{1000};
+   int max_affiliations_iterations{10000};
    double tolerance{1e-8};
    bool update_parameters{true};
    int verbosity{0};
@@ -335,7 +336,7 @@ fembv_bin(
    detail::fill_fembv_bin_distance_matrix(Y, X, models, G);
 
    ClpSimplex_affiliations_solver gamma_solver(G, V, parameters.max_tv_norm);
-   gamma_solver.set_max_iterations(parameters.max_iterations);
+   gamma_solver.set_max_iterations(parameters.max_affiliations_iterations);
    gamma_solver.set_verbosity(parameters.verbosity);
 
    const auto result = detail::fembv_bin_subspace(
@@ -391,6 +392,7 @@ private:
    double max_tv_norm{-1};
    double epsilon{0};
    std::size_t max_iterations{1000};
+   std::size_t max_affiliations_iterations{10000};
    double tolerance{1e-6};
    int verbosity{0};
    double cost{-1};
@@ -408,6 +410,7 @@ bool FEMBVBin::fit(const OutcomesVector& Y, const PredictorsMatrix& X, Generator
    FEMBVBin_parameters fembv_bin_parameters;
    fembv_bin_parameters.max_tv_norm = max_tv_norm;
    fembv_bin_parameters.max_iterations = max_iterations;
+   fembv_bin_parameters.max_affiliations_iterations = max_affiliations_iterations;
    fembv_bin_parameters.tolerance = tolerance;
    fembv_bin_parameters.update_parameters = true;
    fembv_bin_parameters.verbosity = verbosity;
