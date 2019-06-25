@@ -27,7 +27,7 @@ double fembv_bin_regularization(const std::vector<double>& Lambda)
    return std::accumulate(std::begin(Lambda), std::end(Lambda), 0);
 }
 
-double fembv_bin_local_constraint(
+double fembv_bin_local_model_constraint(
    const std::vector<double>& x, std::vector<double>& dx, void* /* params */)
 {
    if (!dx.empty()) {
