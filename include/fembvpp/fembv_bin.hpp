@@ -45,7 +45,7 @@ void fembv_bin_random_initialization(
       }
 
       for (int j = 0; j < n_parameters; ++j) {
-         Lambda[j] /= sum;
+         Lambda[j] /= (2 * sum);
       }
 
       models[i].set_parameters(Lambda);
