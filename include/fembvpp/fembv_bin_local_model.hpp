@@ -53,9 +53,10 @@ double FEMBVBin_local_model::loss(double y, const PredictorsVector& X) const
 {
    using std::log;
 
+   const int n_parameters = Lambda.size();
    double lp = 0;
-   for (auto j : predictor_indices) {
-      lp += Lambda[j] * X(j);
+   for (int i = 0; i < n_parameters; ++i) {
+      lp += Lambda[i] * X(predictor_indices[i]);
    }
    return y * log(lp) + (1 - y) * log(1 - lp);
 }
@@ -72,8 +73,8 @@ double FEMBVBin_local_model::loss_gradient(int i, double y, const PredictorsVect
    }
 
    double lp = 0;
-   for (auto j : predictor_indices) {
-      lp += Lambda[j] * X(j);
+   for (int i = 0; i < n_parameters; ++i) {
+      lp += Lambda[i] * X(predictor_indices[i]);
    }
 
    const int idx = predictor_indices[i];

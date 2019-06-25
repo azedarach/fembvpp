@@ -42,7 +42,7 @@ void print_usage()
       "  -a, --affiliations-output-file=FILE        name of file to write FEM-BV\n"
       "                                             affiliations to\n"
       "  -c, --max-tv-norm=MAX_TV_NORM              TV norm upper bound\n"
-      "  -d, --data-output-file=FILE                name of file to"
+      "  -d, --data-output-file=FILE                name of file to\n"
       "                                             write data to\n"
       "  -h, --help                                 print this help message\n"
       "  -i, --n-init=N_INIT                        number of initializations\n"
