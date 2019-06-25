@@ -57,7 +57,7 @@ void print_usage()
       "  -l, --n-samples=N_SAMPLES                  length of time-series\n"
       "  -p, --parameters-output-file=FILE          name of file to write FEM-BV\n"
       "                                             parameters to\n"
-      "  -r. --n-states=N_STATES                    number of states\n"
+      "  -r, --n-states=N_STATES                    number of states\n"
       "  -s, --n-switches=N_SWITCHES                number of switches\n"
       "  -t, --true-affiliations-output-file=FILE   name of file to\n"
       "                                             write true affiliations to\n"
@@ -445,6 +445,20 @@ Eigen::VectorXd random_predictor_values(
          if (u >= 0.5) {
             x(i) = 1;
          }
+      }
+      // ensure at least one predictor is non-zero
+      bool has_non_zero = false;
+      for (int i = 0; i < n_predictors; ++i) {
+         if (x(i) > 0) {
+            has_non_zero = true;
+            break;
+         }
+      }
+
+      if (!has_non_zero) {
+         std::uniform_int_distribution<> dist(0, n_predictors - 1);
+         const int idx = dist(generator);
+         x(idx) = 1;
       }
    }
 
