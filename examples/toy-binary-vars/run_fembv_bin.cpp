@@ -1,10 +1,10 @@
 /**
- * @file run_fembv_kmeans.cpp
- * @brief example demonstrating FEM-BV-k-means algorithm
+ * @file run_fembv_bin.cpp
+ * @brief example demonstrating FEM-BV method with binary variables
  */
 
-#include "fembv_kmeans.hpp"
-#include "multivariate_normal.hpp"
+#include "fembv_bin.hpp"
+#include "random_matrix.hpp"
 
 #include <Eigen/Core>
 
@@ -19,14 +19,18 @@
 
 using namespace fembvpp;
 
-struct KMeans_options {
+struct FEMBVBin_options {
+   bool disjoint{false};
    int n_components{2};
-   int n_samples{6000};
-   int n_switches{2};
    int n_init{100};
+   int n_predictors{5};
+   int n_samples{500};
+   int n_states{2};
+   int n_switches{2};
    double max_tv_norm{2};
    std::string data_output_file{""};
    std::string true_affiliations_output_file{""};
+   std::string true_parameters_output_file{""};
    std::string parameters_output_file{""};
    std::string affiliations_output_file{""};
    bool verbose{false};
@@ -35,25 +39,30 @@ struct KMeans_options {
 void print_usage()
 {
    std::cout <<
-      "Usage: run_fembv_kmeans [OPTION]\n\n"
-      "Run FEM-BV-k-means on example data.\n\n"
-      "Example: run_fembv_kmeans -l 6000 -s 2\n\n"
+      "Usage: run_fembv_bin [OPTION]\n\n"
+      "Run FEM-BV-binary on example data.\n\n"
+      "Example: run_fembv_bin -l 6000 -s 2\n\n"
       "Options:\n"
       "  -a, --affiliations-output-file=FILE        name of file to write FEM-BV\n"
       "                                             affiliations to\n"
       "  -c, --max-tv-norm=MAX_TV_NORM              TV norm upper bound\n"
       "  -d, --data-output-file=FILE                name of file to"
       "                                             write data to\n"
+      "  -D, --disjoint                             require disjoint predictors\n"
+      "  -g, --true-parameters-output-file=FILE     name of file to write true\n"
+      "                                             parameters to\n"
       "  -h, --help                                 print this help message\n"
       "  -i, --n-init=N_INIT                        number of initializations\n"
       "  -k, --n-components=N_COMPONENTS            number of FEM-BV components\n"
       "  -l, --n-samples=N_SAMPLES                  length of time-series\n"
       "  -p, --parameters-output-file=FILE          name of file to write FEM-BV\n"
       "                                             parameters to\n"
+      "  -r. --n-states=N_STATES                    number of states\n"
       "  -s, --n-switches=N_SWITCHES                number of switches\n"
       "  -t, --true-affiliations-output-file=FILE   name of file to"
       "                                             write true affiliations to\n"
       "  -v, --verbose                              produce verbose output\n"
+      "  -x, --n-predictors=N_PREDICTORS            number of predictors\n"
       << std::endl;
 }
 
@@ -75,9 +84,9 @@ std::string get_option_value(const std::string& option,
    return value;
 }
 
-KMeans_options parse_cmd_line_args(int argc, const char* argv[])
+FEMBVBin_options parse_cmd_line_args(int argc, const char* argv[])
 {
-   KMeans_options options;
+   FEMBVBin_options options;
 
    int i = 1;
    while (i < argc) {
@@ -160,6 +169,30 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
          continue;
       }
 
+      if (opt == "-r") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-r' given but number of states not provided");
+         }
+         const std::string n_states(argv[i++]);
+         if (starts_with(n_states, "-")) {
+            throw std::runtime_error(
+               "-r' given but number of states not provided");
+         }
+         options.n_states = std::stoi(n_states);
+         continue;
+      }
+
+      if (starts_with(opt, "--n-states=")) {
+         const std::string n_states = get_option_value(opt);
+         if (n_states.empty()) {
+            throw std::runtime_error(
+               "--n-states=' given but number of states not provided");
+         }
+         options.n_states = std::stoi(n_states);
+         continue;
+      }
+
       if (opt == "-s") {
          if (i == argc) {
             throw std::runtime_error(
@@ -205,6 +238,30 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
                "--n-samples=' given but number of samples not provided");
          }
          options.n_samples = std::stoi(n_samples);
+         continue;
+      }
+
+      if (opt == "-x") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-x' given but number of predictors not provided");
+         }
+         const std::string n_predictors(argv[i++]);
+         if (starts_with(n_predictors, "-")) {
+            throw std::runtime_error(
+               "-x' given but number of predictors not provided");
+         }
+         options.n_predictors = std::stoi(n_predictors);
+         continue;
+      }
+
+      if (starts_with(opt, "--n-predictors=")) {
+         const std::string n_predictors = get_option_value(opt);
+         if (n_predictors.empty()) {
+            throw std::runtime_error(
+               "--n-predictors=' given but number of predictors not provided");
+         }
+         options.n_predictors = std::stoi(n_predictors);
          continue;
       }
 
@@ -254,6 +311,31 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
                "no output file name provided");
          }
          options.true_affiliations_output_file = filename;
+         continue;
+      }
+
+      if (opt == "-g") {
+         if (i == argc) {
+            throw std::runtime_error(
+               "'-g' given but no output file name provided");
+         }
+         const std::string filename(argv[i++]);
+         if (starts_with(filename, "-") && filename != "-") {
+            throw std::runtime_error(
+               "'-g' given but no output file name provided");
+         }
+         options.true_parameters_output_file = filename;
+         continue;
+      }
+
+      if (starts_with(opt, "--true-parameters-output-file=")) {
+         const std::string filename = get_option_value(opt);
+         if (filename.empty()) {
+            throw std::runtime_error(
+               "'--true-parameters-output-file=' given but "
+               "no output file name provided");
+         }
+         options.true_parameters_output_file = filename;
          continue;
       }
 
@@ -307,6 +389,11 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
          continue;
       }
 
+      if (opt == "-D" || opt == "--disjoint") {
+         options.disjoint = true;
+         continue;
+      }
+
       if (opt == "-v" || opt == "--verbose") {
          options.verbose = true;
          continue;
@@ -320,66 +407,119 @@ KMeans_options parse_cmd_line_args(int argc, const char* argv[])
 }
 
 template <class Generator>
-void generate_data(int n_switches, int n_clusters,
-                   const std::vector<Eigen::VectorXd>& means,
-                   const std::vector<Eigen::MatrixXd>& covariances,
-                   Eigen::MatrixXd& X,
-                   Eigen::MatrixXd& Gamma,
-                   Generator& generator)
+void generate_transition_matrices(
+   int n_predictors, std::vector<Eigen::VectorXd>& transition_matrices,
+   Generator& generator)
 {
-   const int n_samples = X.cols();
-   const int n_components = Gamma.rows();
-   const int run_length = n_samples / (n_switches + 1);
+   const std::size_t n_states = transition_matrices.size();
 
-   Gamma = Eigen::MatrixXd::Zero(n_components, n_samples);
-
-   int cluster = 0;
-   std::vector<int> cluster_assignments;
-   for (int i = 0; i < n_switches; ++i) {
-      for (int t = i * run_length; t < (i + 1) * run_length; ++t) {
-         cluster_assignments.push_back(cluster);
+   std::uniform_real_distribution<> dist(0., 1.);
+   for (std::size_t i = 0; i < n_states; ++i) {
+      double norm = 0;
+      Eigen::VectorXd t(n_predictors);
+      for (int j = 0; j < n_predictors; ++j) {
+         t(j) = dist(generator);
+         norm += t(j);
       }
-      cluster = (cluster + 1) % n_clusters;
-   }
-   for (int t = n_switches * run_length;  t < n_samples; ++t) {
-      cluster_assignments.push_back(cluster);
-   }
-
-   std::vector<Multivariate_normal_distribution> distributions;
-   for (int i = 0; i < n_clusters; ++i) {
-      distributions.push_back(Multivariate_normal_distribution(
-         means[i], covariances[i]));
-   }
-
-   for (int t = 0; t < n_samples; ++t) {
-      Gamma(cluster_assignments[t], t) = 1;
-      X.col(t) = distributions[cluster_assignments[t]](generator);
+      for (int j = 0; j < n_predictors; ++j) {
+         t(j) /= norm;
+      }
+      transition_matrices[i] = t;
    }
 }
 
 template <class Generator>
-std::tuple<bool, Eigen::MatrixXd, Eigen::MatrixXd>
-run_fembv_kmeans(const Eigen::MatrixXd& X, int n_components,
-                 double max_tv_norm, int n_init, bool verbose,
-                 Generator& generator)
+Eigen::VectorXd random_predictor_values(
+   int n_predictors, bool disjoint, Generator& generator)
 {
-   const int n_features = X.rows();
+   Eigen::VectorXd x(Eigen::VectorXd::Zero(n_predictors));
+
+   if (disjoint) {
+      std::uniform_int_distribution<> dist(0, n_predictors - 1);
+      const int idx = dist(generator);
+      x(idx) = 1;
+   } else {
+      std::uniform_real_distribution<> dist(0., 1.);
+      for (int i = 0; i < n_predictors; ++i) {
+         const double u = dist(generator);
+         if (u >= 0.5) {
+            x(i) = 1;
+         }
+      }
+   }
+
+   return x;
+}
+
+template <class Generator>
+double generate_outcome_value(const Eigen::VectorXd& transition_probs,
+                              const Eigen::VectorXd& state,
+                              Generator& generator)
+{
+   const double p = transition_probs.dot(state);
+   std::uniform_real_distribution<> dist(0., 1.);
+   const double u = dist(generator);
+   if (u < p) {
+      return 1.;
+   } else {
+      return 0.;
+   }
+}
+
+template <class Generator>
+void generate_data(int n_switches, int n_states,
+                   const std::vector<Eigen::VectorXd>& transition_matrices,
+                   bool disjoint,
+                   Eigen::VectorXd& Y, Eigen::MatrixXd& X, Eigen::MatrixXd& Gamma,
+                   Generator& generator)
+{
+   const int n_samples = X.cols();
+   const int n_predictors = X.rows();
+   const int run_length = n_samples / (n_switches + 1);
+
+   Gamma = Eigen::MatrixXd::Zero(n_states, n_samples);
+
+   int state = 0;
+   std::vector<int> state_assignments;
+   for (int i = 0; i < n_switches; ++i) {
+      for (int t = i * run_length; t < (i + 1) * run_length; ++t) {
+         state_assignments.push_back(state);
+      }
+      state = (state + 1) % n_states;
+   }
+   for (int t = n_switches * run_length; t < n_samples; ++t) {
+      state_assignments.push_back(state);
+   }
+
+   for (int t = 0; t < n_samples; ++t) {
+      const auto state = state_assignments[t];
+      Gamma(state, t) = 1;
+      X.col(t) = random_predictor_values(n_predictors, disjoint, generator);
+      Y(t) = generate_outcome_value(transition_matrices[state], X.col(t), generator);
+   }
+}
+
+template <class Generator>
+std::tuple<bool, std::vector<FEMBVBin_local_model>, Eigen::MatrixXd>
+run_fembv_bin(const Eigen::VectorXd& Y, const Eigen::MatrixXd& X,
+              int n_components, double max_tv_norm, int n_init, bool verbose,
+              Generator& generator)
+{
    const int n_samples = X.cols();
 
    double min_cost = -1;
-   Eigen::MatrixXd best_parameters(
-      Eigen::MatrixXd::Zero(n_features, n_components));
+   std::vector<FEMBVBin_local_model> best_parameters;
    Eigen::MatrixXd best_affiliations(
       Eigen::MatrixXd::Zero(n_components, n_samples));
    bool has_best_fit = false;
    for (int i = 0; i < n_init; ++i) {
-      FEMBVKMeans model(n_components, max_tv_norm);
+      FEMBVBin model(n_components, max_tv_norm);
 
       if (verbose) {
          model.set_verbosity(1);
       }
 
-      const bool success = model.fit(X, generator);
+      const bool success = model.fit(Y, X, generator);
       if (success) {
          has_best_fit = true;
       }
@@ -450,13 +590,42 @@ void write_csv(const std::string& output_file, const Eigen::MatrixXd& data,
    write_data_lines(ofs, data);
 }
 
-void write_data(const std::string& output_file, const Eigen::MatrixXd& data)
+void write_true_parameters(const std::string& output_file,
+                           const std::vector<Eigen::VectorXd>& transition_matrices)
 {
-   const int n_fields = data.rows();
-   std::vector<std::string> fields(n_fields);
-   for (int i = 0; i < n_fields; ++i ) {
+   const std::size_t n_states = transition_matrices.size();
+   const int n_predictors = transition_matrices[0].size();
+
+   Eigen::MatrixXd data(n_predictors, n_states);
+   for (std::size_t i = 0; i < n_states; ++i) {
+      data.col(i) = transition_matrices[i];
+   }
+
+   std::vector<std::string> fields(n_predictors);
+   for (int i = 0; i < n_predictors; ++i) {
       fields[i] = "x" + std::to_string(i);
    }
+
+   write_csv(output_file, data, fields);
+}
+
+void write_data(const std::string& output_file, const Eigen::VectorXd& Y,
+                const Eigen::MatrixXd& X)
+{
+   const int n_predictors = X.rows();
+   std::vector<std::string> fields(n_predictors + 1);
+   const std::size_t n_fields = fields.size();
+
+   fields[0] = "y";
+   for (std::size_t i = 1; i < n_fields; ++i ) {
+      fields[i] = "x" + std::to_string(i);
+   }
+
+   const int n_samples = X.cols();
+   Eigen::MatrixXd data(n_fields, n_samples);
+   data.row(0) = Y;
+   data.block(1, 0, n_predictors, n_samples) = X;
+
    write_csv(output_file, data, fields);
 }
 
@@ -472,52 +641,50 @@ void write_affiliations(
 }
 
 void write_fembv_parameters(
-   const std::string& output_file, const Eigen::MatrixXd& Theta)
+   const std::string& output_file, const std::vector<FEMBVBin_local_model>& models)
 {
-   const int n_fields = Theta.rows();
+   int max_predictor_index = -1;
+   const std::size_t n_components = models.size();
+   for (std::size_t i = 0; i < n_components; ++i) {
+      const std::vector<int>& predictor_indices = models[i].get_predictor_indices();
+      const std::size_t n_parameters = predictor_indices.size();
+      
+      int max_idx = -1;
+      for (std::size_t j = 0; j < n_parameters; ++j) {
+         if (predictor_indices[j] > max_idx) {
+            max_idx = predictor_indices[j];
+         }
+      }
+
+      if (max_idx > max_predictor_index) {
+         max_predictor_index = max_idx;
+      }
+   }
+
+   Eigen::MatrixXd parameters_data(max_predictor_index + 1, n_components);
+   for (std::size_t i = 0; i < n_components; ++i) {
+      const std::vector<int>& predictor_indices = models[i].get_predictor_indices();
+      const std::vector<double>& parameters = models[i].get_parameters();
+      const std::size_t n_parameters = predictor_indices.size();
+
+      for (std::size_t j = 0; j < n_parameters; ++j) {
+         parameters_data(predictor_indices[j], i) = parameters[j]; 
+      }
+   }
+
+   const int n_fields = parameters_data.rows();
    std::vector<std::string> fields(n_fields);
    for (int i = 0; i < n_fields; ++i) {
       fields[i] = "x" + std::to_string(i);
    }
-   write_csv(output_file, Theta, fields);
+
+   write_csv(output_file, parameters_data, fields);
 }
 
 int main(int argc, const char* argv[])
 {
    const int seed = 0;
    std::mt19937 generator(seed);
-
-   const int n_dims = 2;
-   const int n_clusters = 3;
-
-   Eigen::VectorXd mu_1(2);
-   Eigen::VectorXd mu_2(2);
-   Eigen::VectorXd mu_3(2);
-   Eigen::MatrixXd sigma_1(2, 2);
-   Eigen::MatrixXd sigma_2(2, 2);
-   Eigen::MatrixXd sigma_3(2, 2);
-
-   mu_1 << 0, 0.5;
-   sigma_1 << 0.001, 0,
-      0, 0.02;
-
-   mu_2 << 0, -0.5;
-   sigma_2 << 0.001, 0,
-      0, 0.02;
-
-   mu_3 << 0.25, 0;
-   sigma_3 << 0.002, 0,
-      0, 0.3;
-
-   std::vector<Eigen::VectorXd> means;
-   means.push_back(mu_1);
-   means.push_back(mu_2);
-   means.push_back(mu_3);
-
-   std::vector<Eigen::MatrixXd> covariances;
-   covariances.push_back(sigma_1);
-   covariances.push_back(sigma_2);
-   covariances.push_back(sigma_3);
 
    const auto options = parse_cmd_line_args(argc, argv);
 
@@ -536,14 +703,33 @@ int main(int argc, const char* argv[])
       exit(EXIT_FAILURE);
    }
 
-   Eigen::MatrixXd data(n_dims, options.n_samples);
-   Eigen::MatrixXd true_affiliations(n_clusters, options.n_samples);
+   if (options.n_states < 1) {
+      std::cerr << "Error: number of states must be at least one\n";
+      exit(EXIT_FAILURE);
+   }
 
-   generate_data(options.n_switches, n_clusters, means, covariances,
-                 data, true_affiliations, generator);
+   if (options.n_predictors < 1) {
+      std::cerr << "Error: number of predictors must be at least one\n";
+      exit(EXIT_FAILURE);
+   }
+
+   std::vector<Eigen::VectorXd> transition_matrices(options.n_states);
+   generate_transition_matrices(options.n_states, transition_matrices, generator);
+
+   if (!options.true_parameters_output_file.empty()) {
+      write_true_parameters(options.true_parameters_output_file, transition_matrices);
+   }
+
+   Eigen::VectorXd outcomes(options.n_samples);
+   Eigen::MatrixXd predictors(options.n_predictors, options.n_samples);
+   Eigen::MatrixXd true_affiliations(options.n_states, options.n_samples);
+
+   generate_data(options.n_switches, options.n_states, transition_matrices,
+                 options.disjoint, outcomes, predictors, true_affiliations,
+                 generator);
 
    if (!options.data_output_file.empty()) {
-      write_data(options.data_output_file, data);
+      write_data(options.data_output_file, outcomes, predictors);
    }
 
    if (!options.true_affiliations_output_file.empty()) {
@@ -551,18 +737,18 @@ int main(int argc, const char* argv[])
                          true_affiliations);
    }
 
-   const auto fembv_result = run_fembv_kmeans(
-      data, options.n_components, options.max_tv_norm,
+   const auto fembv_result = run_fembv_bin(
+      outcomes, predictors, options.n_components, options.max_tv_norm,
       options.n_init, options.verbose, generator);
+
+   const std::vector<FEMBVBin_local_model>& parameters(std::get<1>(fembv_result));
+   const Eigen::MatrixXd affiliations(std::get<2>(fembv_result));
 
    const bool success = std::get<0>(fembv_result);
    if (!success) {
       std::cerr << "Error: failed to fit FEM-BV model\n";
       exit(EXIT_FAILURE);
    }
-
-   const Eigen::MatrixXd parameters(std::get<1>(fembv_result));
-   const Eigen::MatrixXd affiliations(std::get<2>(fembv_result));
 
    if (!options.parameters_output_file.empty()) {
       write_fembv_parameters(options.parameters_output_file, parameters);

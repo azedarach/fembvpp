@@ -99,6 +99,11 @@ struct FEMBVBin_cost_parameters {
    const PredictorsMatrix& X;
    const WeightsVector& weights;
    FEMBVBin_local_model& model;
+
+   FEMBVBin_cost_parameters(const OutcomesVector& Y_, const PredictorsMatrix& X_,
+                            const WeightsVector& weights_, FEMBVBin_local_model& model_)
+      : Y(Y_), X(X_), weights(weights_), model(model_)
+      {}
 };
 
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
@@ -114,17 +119,17 @@ double fembv_bin_local_model_cost(
    const auto X = p->X;
    const auto weights = p->weights;
 
-   FEMBVBin_local_model* model = p->model;
-   model->set_parameters(x);
+   FEMBVBin_local_model& model = p->model;
+   model.set_parameters(x);
 
    if (!dx.empty()) {
-      dx = fembv_bin_local_likelihood_grad(Y, X, weights, *model);
+      dx = fembv_bin_local_likelihood_grad(Y, X, weights, model);
       for (auto& dxi : dx) {
          dxi *= -1;
       }
    }
 
-   return -fembv_bin_local_likelihood(Y, X, weights, *model);
+   return -fembv_bin_local_likelihood(Y, X, weights, model);
 }
 
 template <class AffiliationsMatrix, class DistanceMatrix>
@@ -167,13 +172,11 @@ bool update_local_fembv_bin_model(
    const int n_parameters = model.get_n_parameters();
    nlopt::opt optimizer(algorithm, n_parameters);
 
-   Parameters_type params;
-   params.Y = Y;
-   params.X = X;
-   params.weights = weights;
-   params.model = &model;
+   Parameters_type params(Y, X, weights, model);
 
-   optimizer.set_min_objective(fembv_bin_local_model_cost, &params);
+   optimizer.set_min_objective(
+      fembv_bin_local_model_cost<OutcomesVector, PredictorsMatrix, WeightsVector>,
+      &params);
 
    optimizer.set_lower_bounds(0);
    optimizer.set_upper_bounds(1);

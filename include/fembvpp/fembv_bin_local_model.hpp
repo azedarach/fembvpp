@@ -30,6 +30,8 @@ public:
    void set_parameters(const std::vector<double>&);
    void set_parameter(int, double);
 
+   const std::vector<int>& get_predictor_indices() const { return predictor_indices; }
+
    template <class PredictorsVector>
    double loss(double, const PredictorsVector&) const;
    template <class PredictorsVector>
@@ -69,7 +71,7 @@ double FEMBVBin_local_model::loss_gradient(int i, double y, const PredictorsVect
          "parameter index out of bounds");
    }
 
-   double lp;
+   double lp = 0;
    for (auto j : predictor_indices) {
       lp += Lambda[j] * X(j);
    }
