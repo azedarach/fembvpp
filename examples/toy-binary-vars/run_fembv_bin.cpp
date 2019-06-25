@@ -59,7 +59,7 @@ void print_usage()
       "                                             parameters to\n"
       "  -r. --n-states=N_STATES                    number of states\n"
       "  -s, --n-switches=N_SWITCHES                number of switches\n"
-      "  -t, --true-affiliations-output-file=FILE   name of file to"
+      "  -t, --true-affiliations-output-file=FILE   name of file to\n"
       "                                             write true affiliations to\n"
       "  -v, --verbose                              produce verbose output\n"
       "  -x, --n-predictors=N_PREDICTORS            number of predictors\n"

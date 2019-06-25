@@ -51,7 +51,7 @@ void print_usage()
       "  -p, --parameters-output-file=FILE          name of file to write FEM-BV\n"
       "                                             parameters to\n"
       "  -s, --n-switches=N_SWITCHES                number of switches\n"
-      "  -t, --true-affiliations-output-file=FILE   name of file to"
+      "  -t, --true-affiliations-output-file=FILE   name of file to\n"
       "                                             write true affiliations to\n"
       "  -v, --verbose                              produce verbose output\n"
       << std::endl;
