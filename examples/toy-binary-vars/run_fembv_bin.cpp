@@ -728,7 +728,7 @@ int main(int argc, const char* argv[])
    }
 
    std::vector<Eigen::VectorXd> transition_matrices(options.n_states);
-   generate_transition_matrices(options.n_states, transition_matrices, generator);
+   generate_transition_matrices(options.n_predictors, transition_matrices, generator);
 
    if (!options.true_parameters_output_file.empty()) {
       write_true_parameters(options.true_parameters_output_file, transition_matrices);
