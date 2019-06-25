@@ -421,8 +421,9 @@ void generate_transition_matrices(
          t(j) = dist(generator);
          norm += t(j);
       }
+      const double total_p = dist(generator);
       for (int j = 0; j < n_predictors; ++j) {
-         t(j) /= norm;
+         t(j) *= total_p / norm;
       }
       transition_matrices[i] = t;
    }
