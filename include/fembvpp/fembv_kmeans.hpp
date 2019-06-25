@@ -283,7 +283,7 @@ bool FEMBVKMeans::fit(const DataMatrix& X, Generator& generator)
    FEMBVKMeans_parameters kmeans_parameters;
    kmeans_parameters.max_tv_norm = max_tv_norm;
    kmeans_parameters.max_iterations = max_iterations;
-   kmeans_parametesrs.max_affiliations_iterations = max_affiliations_iterations;
+   kmeans_parameters.max_affiliations_iterations = max_affiliations_iterations;
    kmeans_parameters.tolerance = tolerance;
    kmeans_parameters.update_parameters = true;
    kmeans_parameters.verbosity = verbosity;
