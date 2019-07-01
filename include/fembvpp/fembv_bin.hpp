@@ -384,6 +384,7 @@ public:
 
    double get_cost() const { return cost; }
    double get_log_likelihood_bound() const { return log_likelihood_bound; }
+   std::size_t get_total_n_parameters() const { return n_parameters; }
    std::size_t get_n_iter() const { return n_iter; }
    const std::vector<FEMBVBin_local_model>& get_parameters() const { return models; }
    const Eigen::MatrixXd& get_affiliations() const { return affiliations; }
@@ -398,6 +399,7 @@ private:
    int verbosity{0};
    double cost{-1};
    double log_likelihood_bound{-1};
+   std::size_t n_parameters{0};
    std::size_t n_iter{0};
    std::vector<FEMBVBin_local_model> models{};
    Eigen::MatrixXd affiliations{};
@@ -437,6 +439,11 @@ bool FEMBVBin::fit(const OutcomesVector& Y, const PredictorsMatrix& X, Generator
       Y, X, affiliations, models, G, V, fembv_bin_parameters);
 
    n_iter = std::get<1>(result);
+   // note: count does not take into account equality constraints
+   n_parameters = n_components * n_samples;
+   for (int i = 0; i < n_components; ++i) {
+      n_parameters += models[i].get_n_parameters();
+   }
    cost = std::get<2>(result);
 
    log_likelihood_bound = calculate_log_likelihood_bound(Y, X);
