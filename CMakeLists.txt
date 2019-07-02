@@ -49,7 +49,8 @@ set(FEMBVPP_PUBLIC_HEADERS
     include/fembvpp/fembv_bin.hpp
     include/fembvpp/fembv_bin_local_model.hpp
     include/fembvpp/fembv_kmeans.hpp
-    include/fembvpp/linear_constraint.hpp)
+    include/fembvpp/linear_constraint.hpp
+    include/fembvpp/random_matrix.hpp)
 
 add_library(fembvpp
     src/clpsimplex_affiliations_solver.cpp
