@@ -162,7 +162,8 @@ void fill_fembv_bin_distance_matrix(
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
 bool update_local_fembv_bin_model(
    const OutcomesVector& Y, const PredictorsMatrix& X,
-   const WeightsVector& weights, FEMBVBin_local_model& model)
+   const WeightsVector& weights, FEMBVBin_local_model& model,
+   double abs_tol, double rel_tol)
 {
    using Parameters_type = FEMBVBin_cost_parameters<
       OutcomesVector, PredictorsMatrix, WeightsVector>;
@@ -183,8 +184,8 @@ bool update_local_fembv_bin_model(
    optimizer.add_inequality_constraint(
       fembv_bin_local_model_constraint, nullptr, 1e-8);
 
-   optimizer.set_ftol_rel(1.e-6);
-   optimizer.set_ftol_abs(1.e-6);
+   optimizer.set_ftol_rel(rel_tol);
+   optimizer.set_ftol_abs(abs_tol);
 
    std::vector<double> x(model.get_parameters());
    double loss_value = 0;
@@ -204,14 +205,15 @@ template <class OutcomesVector, class PredictorsMatrix, class AffiliationsMatrix
 bool update_fembv_bin_parameters(
    const OutcomesVector& Y, const PredictorsMatrix& X,
    const AffiliationsMatrix& Gamma,
-   std::vector<FEMBVBin_local_model>& models)
+   std::vector<FEMBVBin_local_model>& models,
+   double abs_tol, double rel_tol)
 {
    const int n_components = Gamma.rows();
 
    bool success = true;
    for (int i = 0; i < n_components; ++i) {
       success = success && update_local_fembv_bin_model(
-         Y, X, Gamma.row(i), models[i]);
+         Y, X, Gamma.row(i), models[i], abs_tol, rel_tol);
    }
 
    return success;
@@ -223,8 +225,9 @@ std::tuple<bool, bool, std::size_t, double>
 fembv_bin_subspace(
    const OutcomesVector& Y, const PredictorsMatrix& X, AffiliationsMatrix& Gamma,
    std::vector<FEMBVBin_local_model>& models, AffiliationsSolver& gamma_solver,
-   DistanceMatrix& G, std::size_t max_iterations, double tolerance, bool update_parameters,
-   int verbosity)
+   DistanceMatrix& G, std::size_t max_iterations, double tolerance,
+   bool update_parameters, double parameters_abs_tol,
+   double parameters_rel_tol, int verbosity)
 {
    auto initial_cost = fembv_bin_cost(Gamma, models, G);
 
@@ -235,7 +238,8 @@ fembv_bin_subspace(
    bool converged = false;
    while (n_iter < max_iterations) {
       if (update_parameters) {
-         parameters_success = update_fembv_bin_parameters(Y, X, Gamma, models);
+         parameters_success = update_fembv_bin_parameters(
+            Y, X, Gamma, models, parameters_abs_tol, parameters_rel_tol);
       }
 
       fill_fembv_bin_distance_matrix(Y, X, models, G);
@@ -288,6 +292,8 @@ struct FEMBVBin_parameters {
    std::size_t max_iterations{1000};
    int max_affiliations_iterations{10000};
    double tolerance{1e-8};
+   double parameters_abs_tol{1e-6};
+   double parameters_rel_tol{1e-6};
    bool update_parameters{true};
    int verbosity{0};
 };
@@ -342,7 +348,8 @@ fembv_bin(
    const auto result = detail::fembv_bin_subspace(
       Y, X, Gamma, models, gamma_solver, G,
       parameters.max_iterations, parameters.tolerance,
-      parameters.update_parameters, parameters.verbosity);
+      parameters.update_parameters, parameters.parameters_abs_tol,
+      parameters.parameters_rel_tol, parameters.verbosity);
 
    const bool parameters_success = std::get<0>(result);
    const bool affiliations_success = std::get<1>(result);
@@ -380,6 +387,8 @@ public:
 
    void set_max_iterations(std::size_t i) { max_iterations = i; }
    void set_tolerance(double t) { tolerance = t; }
+   void set_parameters_abs_tol(double t) { parameters_abs_tol = t; }
+   void set_parameters_rel_tol(double t) { parameters_rel_tol = t; }
    void set_verbosity(int v) { verbosity = v; }
 
    double get_cost() const { return cost; }
@@ -396,6 +405,8 @@ private:
    std::size_t max_iterations{1000};
    std::size_t max_affiliations_iterations{10000};
    double tolerance{1e-6};
+   double parameters_abs_tol{1e-6};
+   double parameters_rel_tol{1e-6};
    int verbosity{0};
    double cost{-1};
    double log_likelihood_bound{-1};
@@ -420,6 +431,8 @@ bool FEMBVBin::fit(const OutcomesVector& Y, const PredictorsMatrix& X, Generator
    fembv_bin_parameters.max_iterations = max_iterations;
    fembv_bin_parameters.max_affiliations_iterations = max_affiliations_iterations;
    fembv_bin_parameters.tolerance = tolerance;
+   fembv_bin_parameters.parameters_abs_tol = parameters_abs_tol;
+   fembv_bin_parameters.parameters_rel_tol = parameters_rel_tol;
    fembv_bin_parameters.update_parameters = true;
    fembv_bin_parameters.verbosity = verbosity;
 
@@ -460,6 +473,8 @@ Eigen::MatrixXd FEMBVBin::transform(const OutcomesVector& Y, const PredictorsMat
    fembv_bin_parameters.max_tv_norm = max_tv_norm;
    fembv_bin_parameters.max_iterations = max_iterations;
    fembv_bin_parameters.tolerance = tolerance;
+   fembv_bin_parameters.parameters_abs_tol = parameters_abs_tol;
+   fembv_bin_parameters.parameters_rel_tol = parameters_rel_tol;
    fembv_bin_parameters.update_parameters = false;
    fembv_bin_parameters.verbosity = verbosity;
 
