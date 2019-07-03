@@ -41,12 +41,22 @@ if(NOT Ipopt_INCLUDE_DIR)
 endif()
 
 if(Ipopt_INCLUDE_DIR)
-    _ipopt_get_version(
-        ${Ipopt_INCLUDE_DIR}/config_ipopt_default.h
-        Ipopt_VERSION_MAJOR
-        Ipopt_VERSION_MINOR
-        Ipopt_VERSION_PATCHLEVEL)
-    set(Ipopt_VERSION ${Ipopt_VERSION_MAJOR}.${Ipopt_VERSION_MINOR}.${Ipopt_VERSION_PATCHLEVEL})
+  find_file(Ipopt_VERSION_FILE
+    NAMES
+    IpoptConfig.h
+    config_iptop_default.h
+    PATHS
+    ${Ipopt_INCLUDE_DIR}
+    )
+
+    if(NOT Ipopt_VERSION_FILE STREQUAL "Ipopt_VERSION_FILE-NOTFOUND")
+      _ipopt_get_version(
+          ${Ipopt_VERSION_FILE}
+          Ipopt_VERSION_MAJOR
+          Ipopt_VERSION_MINOR
+          Ipopt_VERSION_PATCHLEVEL)
+      set(Ipopt_VERSION ${Ipopt_VERSION_MAJOR}.${Ipopt_VERSION_MINOR}.${Ipopt_VERSION_PATCHLEVEL})
+    endif()
 endif()
 
 if(NOT Ipopt_LIBRARY)
