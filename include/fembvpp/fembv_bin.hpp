@@ -93,7 +93,7 @@ bool update_fembv_bin_parameters(
 
    bool success = true;
    for (int i = 0; i < n_components; ++i) {
-      success = success && solver.update_local_fembv_bin_model(
+      success = success && solver.update_local_model(
          Y, X, Gamma.row(i), models[i]);
    }
 
