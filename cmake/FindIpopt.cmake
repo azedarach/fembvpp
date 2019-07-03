@@ -43,8 +43,8 @@ endif()
 if(Ipopt_INCLUDE_DIR)
   find_file(Ipopt_VERSION_FILE
     NAMES
+    config_ipopt_default.h
     IpoptConfig.h
-    config_iptop_default.h
     PATHS
     ${Ipopt_INCLUDE_DIR}
     )
