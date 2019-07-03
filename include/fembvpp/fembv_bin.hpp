@@ -12,7 +12,6 @@
 #include "random_matrix.hpp"
 
 #include <Eigen/Core>
-#include <nlopt.hpp>
 
 #include <iostream>
 #include <iterator>
@@ -175,6 +174,7 @@ struct FEMBVBin_parameters {
    double tolerance{1e-8};
    double parameters_tolerance{1e-6};
    int max_parameters_iterations{10000};
+   Ipopt_initial_guess parameters_initialization{Ipopt_initial_guess::Uniform};
    bool update_parameters{true};
    int verbosity{0};
 };
@@ -226,6 +226,7 @@ fembv_bin(
    theta_solver.set_tolerance(parameters.parameters_tolerance);
    theta_solver.set_max_iterations(parameters.max_parameters_iterations);
    theta_solver.set_verbosity(parameters.verbosity);
+   theta_solver.set_initialization_method(parameters.parameters_initialization);
    theta_solver.initialize();
 
    ClpSimplex_affiliations_solver gamma_solver(G, V, parameters.max_tv_norm);
@@ -273,8 +274,6 @@ public:
 
    void set_max_iterations(std::size_t i) { max_iterations = i; }
    void set_tolerance(double t) { tolerance = t; }
-   void set_parameters_abs_tol(double t) { parameters_abs_tol = t; }
-   void set_parameters_rel_tol(double t) { parameters_rel_tol = t; }
    void set_verbosity(int v) { verbosity = v; }
 
    double get_cost() const { return cost; }
@@ -291,8 +290,8 @@ private:
    std::size_t max_iterations{1000};
    std::size_t max_affiliations_iterations{10000};
    double tolerance{1e-6};
-   double parameters_abs_tol{1e-6};
-   double parameters_rel_tol{1e-6};
+   double parameters_tolerance{1e-6};
+   std::size_t max_parameters_iterations{10000};
    int verbosity{0};
    double cost{-1};
    double log_likelihood_bound{-1};
@@ -316,9 +315,9 @@ bool FEMBVBin::fit(const OutcomesVector& Y, const PredictorsMatrix& X, Generator
    fembv_bin_parameters.max_tv_norm = max_tv_norm;
    fembv_bin_parameters.max_iterations = max_iterations;
    fembv_bin_parameters.max_affiliations_iterations = max_affiliations_iterations;
+   fembv_bin_parameters.parameters_tolerance = parameters_tolerance;
+   fembv_bin_parameters.max_parameters_iterations = max_parameters_iterations;
    fembv_bin_parameters.tolerance = tolerance;
-   fembv_bin_parameters.parameters_abs_tol = parameters_abs_tol;
-   fembv_bin_parameters.parameters_rel_tol = parameters_rel_tol;
    fembv_bin_parameters.update_parameters = true;
    fembv_bin_parameters.verbosity = verbosity;
 
@@ -359,8 +358,8 @@ Eigen::MatrixXd FEMBVBin::transform(const OutcomesVector& Y, const PredictorsMat
    fembv_bin_parameters.max_tv_norm = max_tv_norm;
    fembv_bin_parameters.max_iterations = max_iterations;
    fembv_bin_parameters.tolerance = tolerance;
-   fembv_bin_parameters.parameters_abs_tol = parameters_abs_tol;
-   fembv_bin_parameters.parameters_rel_tol = parameters_rel_tol;
+   fembv_bin_parameters.parameters_tolerance = parameters_tolerance;
+   fembv_bin_parameters.max_parameters_iterations = max_parameters_iterations;
    fembv_bin_parameters.update_parameters = false;
    fembv_bin_parameters.verbosity = verbosity;
 

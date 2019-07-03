@@ -32,7 +32,18 @@ std::string ipopt_status_to_string(Ipopt::SolverReturn status)
 
 } // namespace detail
 
-FEMBVBin_local_model_ipopt_solver::FEMBVBin_local_model_ip_solver()
+FEMBVBin_local_model_ipopt_solver::FEMBVBin_local_model_ipopt_solver(int seed)
+   : generator(seed)
+{
+   // disable console output by default
+   ip_solver = new Ipopt::IpoptApplication(false);
+
+   ip_solver->Options()->SetStringValue("jac_d_constant", "yes");
+   ip_solver->Options()->SetStringValue("mu_strategy", "adaptive");
+   ip_solver->Options()->SetNumericValue("bound_relax_factor", 0);
+}
+
+FEMBVBin_local_model_ipopt_solver::FEMBVBin_local_model_ipopt_solver()
 {
    // disable console output by default
    ip_solver = new Ipopt::IpoptApplication(false);

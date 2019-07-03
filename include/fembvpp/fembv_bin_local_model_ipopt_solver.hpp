@@ -7,9 +7,12 @@
 #include <IpTNLP.hpp>
 
 #include <cmath>
+#include <random>
 #include <string>
 
 namespace fembvpp {
+
+enum class Ipopt_initial_guess : int { Uniform, Random, Current };
 
 namespace detail {
 
@@ -23,11 +26,23 @@ public:
 
    FEMBVBin_local_nlp(
       const OutcomesVector&, const PredictorsMatrix&,
+      const WeightsVector&, FEMBVBin_local_model&, int,
+      Ipopt_initial_guess, int);
+   FEMBVBin_local_nlp(
+      const OutcomesVector&, const PredictorsMatrix&,
+      const WeightsVector&, FEMBVBin_local_model&, int,
+      Ipopt_initial_guess);
+   FEMBVBin_local_nlp(
+      const OutcomesVector&, const PredictorsMatrix&,
       const WeightsVector&, FEMBVBin_local_model&, int);
+   FEMBVBin_local_nlp(
+      const OutcomesVector&, const PredictorsMatrix&,
+      const WeightsVector&, FEMBVBin_local_model&);
    virtual ~FEMBVBin_local_nlp() = default;
    FEMBVBin_local_nlp(const FEMBVBin_local_nlp&) = delete;
    FEMBVBin_local_nlp operator=(const FEMBVBin_local_nlp&) = delete;
 
+   void set_initialization_method(Ipopt_initial_guess i) { initialization = i; }
    void set_verbosity(int v) { verbosity = v; }
 
    virtual bool get_nlp_info(Index&, Index&, Index&, Index&,
@@ -51,7 +66,9 @@ public:
       Ipopt::IpoptCalculatedQuantities*) override;
 
 private:
+   std::mt19937 generator{};
    int verbosity{0};
+   Ipopt_initial_guess initialization{Ipopt_initial_guess::Uniform};
    const OutcomesVector& Y;
    const PredictorsMatrix& X;
    const WeightsVector& weights;
@@ -65,8 +82,52 @@ template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
 FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::FEMBVBin_local_nlp(
    const OutcomesVector& Y_, const PredictorsMatrix& X_,
    const WeightsVector& weights_, FEMBVBin_local_model& model_,
+   int verbosity_, Ipopt_initial_guess initialization_, int seed_)
+   : generator(seed_)
+   , verbosity(verbosity_)
+   , initialization(initialization_)
+   , Y(Y_)
+   , X(X_)
+   , weights(weights_)
+   , model(model_)
+{
+}
+
+template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
+FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::FEMBVBin_local_nlp(
+   const OutcomesVector& Y_, const PredictorsMatrix& X_,
+   const WeightsVector& weights_, FEMBVBin_local_model& model_,
+   int verbosity_, Ipopt_initial_guess initialization_)
+   : verbosity(verbosity_)
+   , initialization(initialization_)
+   , Y(Y_)
+   , X(X_)
+   , weights(weights_)
+   , model(model_)
+{
+}
+
+template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
+FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::FEMBVBin_local_nlp(
+   const OutcomesVector& Y_, const PredictorsMatrix& X_,
+   const WeightsVector& weights_, FEMBVBin_local_model& model_,
    int verbosity_)
-   : verbosity(verbosity_), Y(Y_), X(X_), weights(weights_), model(model_)
+   : verbosity(verbosity_)
+   , Y(Y_)
+   , X(X_)
+   , weights(weights_)
+   , model(model_)
+{
+}
+
+template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
+FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::FEMBVBin_local_nlp(
+   const OutcomesVector& Y_, const PredictorsMatrix& X_,
+   const WeightsVector& weights_, FEMBVBin_local_model& model_)
+   : Y(Y_)
+   , X(X_)
+   , weights(weights_)
+   , model(model_)
 {
 }
 
@@ -108,7 +169,7 @@ bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::get_nl
 
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
 bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::get_bounds_info(
-   Index n, Number* x_L, Number* x_U, Index m, Number* g_L, Number* g_U)
+   Index n, Number* x_L, Number* x_U, Index /* m */, Number* g_L, Number* g_U)
 {
    // parameters are bounded between 0 and 1
    for (Index i = 0; i < n; ++i) {
@@ -125,16 +186,39 @@ bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::get_bo
 
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
 bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::get_starting_point(
-   Index n, bool init_x, Number* x, bool init_z, Number* z_L, Number* z_U,
-   Index m, bool init_lambda, Number* lambda)
+   Index n, bool /* init_x */, Number* x, bool init_z, Number* /* z_L */, Number* /* z_U */,
+   Index /* m */, bool init_lambda, Number* /* lambda */)
 {
    if (init_z || init_lambda) {
       throw std::runtime_error("initialization of dual variables not implemented");
    }
 
-   const auto& parameters = model.get_parameters();
-   for (Index i = 0; i < n; ++i) {
-      x[i] = 1.0 / (n + 1); //parameters[i];
+   switch (initialization) {
+      case Ipopt_initial_guess::Uniform: {
+         for (Index i = 0; i < n; ++i) {
+            x[i] = 1.0 / (n + 1);
+         }
+         break;
+      }
+      case Ipopt_initial_guess::Current: {
+         const auto& parameters = model.get_parameters();
+         for (Index i = 0; i < n; ++i) {
+            x[i] = parameters[i];
+         } 
+      }
+      case Ipopt_initial_guess::Random: {
+         std::uniform_real_distribution<> dist(0., 1.);
+         double sum = 0.;
+         for (Index i = 0; i < n; ++i) {
+            x[i] = dist(generator);
+            sum += x[i];
+         }
+
+         const double target_sum = dist(generator);
+         for (Index i = 0; i < n; ++i) {
+            x[i] *= target_sum / sum;
+         }
+      }
    }
 
    return true;
@@ -218,7 +302,7 @@ bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::eval_g
 
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
 bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::eval_jac_g(
-   Index n, const Number* x, bool /* new_x */, Index m,
+   Index n, const Number* /* x */, bool /* new_x */, Index /* m */,
    Index nele_jac, Index* i_row, Index* j_col, Number* values)
 {
    if (values == NULL) {
@@ -241,7 +325,7 @@ bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::eval_j
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
 bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::eval_h(
    Index n, const Number* x, bool /* new_x */, Number obj_factor,
-   Index m, const Number* lambda, bool /* new_lambda */, Index nele_hess,
+   Index /* m */, const Number* /* lambda */, bool /* new_lambda */, Index /* nele_hess */,
    Index* i_row, Index* j_col, Number* values)
 {
    if (values == NULL) {
@@ -348,7 +432,9 @@ void FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::finali
 class FEMBVBin_local_model_ipopt_solver {
 public:
    FEMBVBin_local_model_ipopt_solver();
+   explicit FEMBVBin_local_model_ipopt_solver(int);
 
+   void set_initialization_method(Ipopt_initial_guess i) { initialization = i; }
    void set_max_iterations(int it);
    void set_tolerance(double t);
    void set_verbosity(int v) { verbosity = v; }
@@ -359,19 +445,25 @@ public:
    bool update_local_model(const OutcomesVector&, const PredictorsMatrix&,
                            const WeightsVector&, FEMBVBin_local_model&);
 private:
+   Ipopt_initial_guess initialization{Ipopt_initial_guess::Uniform};
    int verbosity{0};
+   std::mt19937 generator{};
    Ipopt::SmartPtr<Ipopt::IpoptApplication> ip_solver{};
 };
 
 template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
-bool FEMBVBin_local_model_ip_solver::update_local_model(
+bool FEMBVBin_local_model_ipopt_solver::update_local_model(
    const OutcomesVector& Y, const PredictorsMatrix& X,
    const WeightsVector& weights, FEMBVBin_local_model& model)
 {
    using NLP_type = detail::FEMBVBin_local_nlp<OutcomesVector,
                                                PredictorsMatrix,
                                                WeightsVector>;
-   Ipopt::SmartPtr<Ipopt::TNLP> nlp = new NLP_type(Y, X, weights, model, verbosity);
+   std::uniform_int_distribution<> dist(0);
+   const int seed = dist(generator);
+
+   Ipopt::SmartPtr<Ipopt::TNLP> nlp = new NLP_type(
+      Y, X, weights, model, verbosity, initialization, seed);
 
    const Ipopt::ApplicationReturnStatus status = ip_solver->OptimizeTNLP(nlp);
 
