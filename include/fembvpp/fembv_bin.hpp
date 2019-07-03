@@ -8,6 +8,7 @@
 
 #include "clpsimplex_affiliations_solver.hpp"
 #include "fembv_bin_local_model.hpp"
+#include "fembv_bin_local_model_ipopt_solver.hpp"
 #include "random_matrix.hpp"
 
 #include <Eigen/Core>
@@ -54,84 +55,6 @@ void fembv_bin_random_initialization(
    random_left_stochastic_matrix(Gamma, generator);
 }
 
-template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
-double fembv_bin_local_likelihood(
-   const OutcomesVector& Y, const PredictorsMatrix& X, const WeightsVector& weights,
-   const FEMBVBin_local_model& model)
-{
-   using std::log;
-
-   const int n_samples = Y.size();
-
-   double loss = 0;
-   for (int t = 0; t < n_samples; ++t) {
-      loss += weights(t) * model.loss(Y(t), X.col(t));
-   }
-
-   return loss - model.regularization();
-}
-
-template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
-std::vector<double> fembv_bin_local_likelihood_grad(
-   const OutcomesVector& Y, const PredictorsMatrix& X, const WeightsVector& weights,
-   const FEMBVBin_local_model& model)
-{
-   const int n_samples = Y.size();
-   const int n_parameters = model.get_n_parameters();
-
-   std::vector<double> grad(n_parameters, 0);
-   for (int t = 0; t < n_samples; ++t) {
-      for (int i = 0; i < n_parameters; ++i) {
-         grad[i] += weights(t) * model.loss_gradient(i, Y(t), X.col(t));
-      }
-   }
-
-   for (int i = 0; i < n_parameters; ++i) {
-      grad[i] -= model.regularization_gradient(i);
-   }
-
-   return grad;
-}
-
-template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
-struct FEMBVBin_cost_parameters {
-   const OutcomesVector& Y;
-   const PredictorsMatrix& X;
-   const WeightsVector& weights;
-   FEMBVBin_local_model& model;
-
-   FEMBVBin_cost_parameters(const OutcomesVector& Y_, const PredictorsMatrix& X_,
-                            const WeightsVector& weights_, FEMBVBin_local_model& model_)
-      : Y(Y_), X(X_), weights(weights_), model(model_)
-      {}
-};
-
-template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
-double fembv_bin_local_model_cost(
-   const std::vector<double>& x, std::vector<double>& dx, void* params)
-{
-   using Parameters_type = FEMBVBin_cost_parameters<
-      OutcomesVector, PredictorsMatrix, WeightsVector>;
-   
-   Parameters_type* p = static_cast<Parameters_type*>(params);
-
-   const auto Y = p->Y;
-   const auto X = p->X;
-   const auto weights = p->weights;
-
-   FEMBVBin_local_model& model = p->model;
-   model.set_parameters(x);
-
-   if (!dx.empty()) {
-      dx = fembv_bin_local_likelihood_grad(Y, X, weights, model);
-      for (auto& dxi : dx) {
-         dxi *= -1;
-      }
-   }
-
-   return -fembv_bin_local_likelihood(Y, X, weights, model);
-}
-
 template <class AffiliationsMatrix, class DistanceMatrix>
 double fembv_bin_cost(
    const AffiliationsMatrix& Gamma, const std::vector<FEMBVBin_local_model>& models,
@@ -159,75 +82,33 @@ void fill_fembv_bin_distance_matrix(
    }
 }
 
-template <class OutcomesVector, class PredictorsMatrix, class WeightsVector>
-bool update_local_fembv_bin_model(
-   const OutcomesVector& Y, const PredictorsMatrix& X,
-   const WeightsVector& weights, FEMBVBin_local_model& model,
-   double abs_tol, double rel_tol)
-{
-   using Parameters_type = FEMBVBin_cost_parameters<
-      OutcomesVector, PredictorsMatrix, WeightsVector>;
-
-   nlopt::algorithm algorithm = nlopt::LD_SLSQP;
-
-   const int n_parameters = model.get_n_parameters();
-   nlopt::opt optimizer(algorithm, n_parameters);
-
-   Parameters_type params(Y, X, weights, model);
-
-   optimizer.set_min_objective(
-      fembv_bin_local_model_cost<OutcomesVector, PredictorsMatrix, WeightsVector>,
-      &params);
-
-   optimizer.set_lower_bounds(0);
-   optimizer.set_upper_bounds(1);
-   optimizer.add_inequality_constraint(
-      fembv_bin_local_model_constraint, nullptr, 1e-8);
-
-   optimizer.set_ftol_rel(rel_tol);
-   optimizer.set_ftol_abs(abs_tol);
-
-   std::vector<double> x(model.get_parameters());
-   double loss_value = 0;
-   const auto result = optimizer.optimize(x, loss_value);
-
-   if (result < 0) {
-      std::cerr << "optimization failed (exit code: " << result << ")\n";
-      throw std::runtime_error("optimization failed");
-   }
-
-   model.set_parameters(x);
-
-   return true;
-}
-
-template <class OutcomesVector, class PredictorsMatrix, class AffiliationsMatrix>
+template <class OutcomesVector, class PredictorsMatrix, class AffiliationsMatrix,
+          class ParametersSolver>
 bool update_fembv_bin_parameters(
    const OutcomesVector& Y, const PredictorsMatrix& X,
    const AffiliationsMatrix& Gamma,
    std::vector<FEMBVBin_local_model>& models,
-   double abs_tol, double rel_tol)
+   ParametersSolver& solver)
 {
    const int n_components = Gamma.rows();
 
    bool success = true;
    for (int i = 0; i < n_components; ++i) {
-      success = success && update_local_fembv_bin_model(
-         Y, X, Gamma.row(i), models[i], abs_tol, rel_tol);
+      success = success && solver.update_local_fembv_bin_model(
+         Y, X, Gamma.row(i), models[i]);
    }
 
    return success;
 }
 
 template <class OutcomesVector, class PredictorsMatrix, class AffiliationsMatrix,
-          class AffiliationsSolver, class DistanceMatrix>
+          class AffiliationsSolver, class ParametersSolver, class DistanceMatrix>
 std::tuple<bool, bool, std::size_t, double>
 fembv_bin_subspace(
    const OutcomesVector& Y, const PredictorsMatrix& X, AffiliationsMatrix& Gamma,
    std::vector<FEMBVBin_local_model>& models, AffiliationsSolver& gamma_solver,
-   DistanceMatrix& G, std::size_t max_iterations, double tolerance,
-   bool update_parameters, double parameters_abs_tol,
-   double parameters_rel_tol, int verbosity)
+   ParametersSolver& theta_solver, DistanceMatrix& G, std::size_t max_iterations,
+   double tolerance, bool update_parameters, int verbosity)
 {
    auto initial_cost = fembv_bin_cost(Gamma, models, G);
 
@@ -239,7 +120,7 @@ fembv_bin_subspace(
    while (n_iter < max_iterations) {
       if (update_parameters) {
          parameters_success = update_fembv_bin_parameters(
-            Y, X, Gamma, models, parameters_abs_tol, parameters_rel_tol);
+            Y, X, Gamma, models, theta_solver);
       }
 
       fill_fembv_bin_distance_matrix(Y, X, models, G);
@@ -292,8 +173,8 @@ struct FEMBVBin_parameters {
    std::size_t max_iterations{1000};
    int max_affiliations_iterations{10000};
    double tolerance{1e-8};
-   double parameters_abs_tol{1e-6};
-   double parameters_rel_tol{1e-6};
+   double parameters_tolerance{1e-6};
+   int max_parameters_iterations{10000};
    bool update_parameters{true};
    int verbosity{0};
 };
@@ -341,15 +222,20 @@ fembv_bin(
 
    detail::fill_fembv_bin_distance_matrix(Y, X, models, G);
 
+   FEMBVBin_local_model_ipopt_solver theta_solver;
+   theta_solver.set_tolerance(parameters.parameters_tolerance);
+   theta_solver.set_max_iterations(parameters.max_parameters_iterations);
+   theta_solver.set_verbosity(parameters.verbosity);
+   theta_solver.initialize();
+
    ClpSimplex_affiliations_solver gamma_solver(G, V, parameters.max_tv_norm);
    gamma_solver.set_max_iterations(parameters.max_affiliations_iterations);
    gamma_solver.set_verbosity(parameters.verbosity);
 
    const auto result = detail::fembv_bin_subspace(
-      Y, X, Gamma, models, gamma_solver, G,
+      Y, X, Gamma, models, gamma_solver, theta_solver, G,
       parameters.max_iterations, parameters.tolerance,
-      parameters.update_parameters, parameters.parameters_abs_tol,
-      parameters.parameters_rel_tol, parameters.verbosity);
+      parameters.update_parameters, parameters.verbosity);
 
    const bool parameters_success = std::get<0>(result);
    const bool affiliations_success = std::get<1>(result);
