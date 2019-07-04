@@ -177,6 +177,7 @@ struct FEMBVBin_parameters {
    Ipopt_initial_guess parameters_initialization{Ipopt_initial_guess::Uniform};
    bool update_parameters{true};
    int verbosity{0};
+   int random_seed{0};
 };
 
 template <class OutcomesVector, class PredictorsMatrix,
@@ -222,7 +223,7 @@ fembv_bin(
 
    detail::fill_fembv_bin_distance_matrix(Y, X, models, G);
 
-   FEMBVBin_local_model_ipopt_solver theta_solver;
+   FEMBVBin_local_model_ipopt_solver theta_solver(parameters.random_seed);
    theta_solver.set_tolerance(parameters.parameters_tolerance);
    theta_solver.set_max_iterations(parameters.max_parameters_iterations);
    theta_solver.set_verbosity(parameters.verbosity);
@@ -275,6 +276,10 @@ public:
    void set_max_iterations(std::size_t i) { max_iterations = i; }
    void set_tolerance(double t) { tolerance = t; }
    void set_verbosity(int v) { verbosity = v; }
+   void set_random_seed(int s) { random_seed = s; }
+   void set_parameters_initialization(Ipopt_initial_guess i) {
+      parameters_initialization = i;
+   }
 
    double get_cost() const { return cost; }
    double get_log_likelihood_bound() const { return log_likelihood_bound; }
@@ -293,6 +298,8 @@ private:
    double parameters_tolerance{1e-6};
    std::size_t max_parameters_iterations{10000};
    int verbosity{0};
+   int random_seed{0};
+   Ipopt_initial_guess parameters_initialization{Ipopt_initial_guess::Uniform};
    double cost{-1};
    double log_likelihood_bound{-1};
    std::size_t n_parameters{0};
@@ -317,6 +324,7 @@ bool FEMBVBin::fit(const OutcomesVector& Y, const PredictorsMatrix& X, Generator
    fembv_bin_parameters.max_affiliations_iterations = max_affiliations_iterations;
    fembv_bin_parameters.parameters_tolerance = parameters_tolerance;
    fembv_bin_parameters.max_parameters_iterations = max_parameters_iterations;
+   fembv_bin_parameters.parameters_initialization = parameters_initialization;
    fembv_bin_parameters.tolerance = tolerance;
    fembv_bin_parameters.update_parameters = true;
    fembv_bin_parameters.verbosity = verbosity;
@@ -360,6 +368,7 @@ Eigen::MatrixXd FEMBVBin::transform(const OutcomesVector& Y, const PredictorsMat
    fembv_bin_parameters.tolerance = tolerance;
    fembv_bin_parameters.parameters_tolerance = parameters_tolerance;
    fembv_bin_parameters.max_parameters_iterations = max_parameters_iterations;
+   fembv_bin_parameters.parameters_initialization = parameters_initialization;
    fembv_bin_parameters.update_parameters = false;
    fembv_bin_parameters.verbosity = verbosity;
 

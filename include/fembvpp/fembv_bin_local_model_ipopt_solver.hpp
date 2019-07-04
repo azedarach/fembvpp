@@ -7,8 +7,10 @@
 #include <IpTNLP.hpp>
 
 #include <cmath>
+#include <limits>
 #include <random>
 #include <string>
+#include <vector>
 
 namespace fembvpp {
 
@@ -65,9 +67,13 @@ public:
       const Number*, Number, const Ipopt::IpoptData*,
       Ipopt::IpoptCalculatedQuantities*) override;
 
+   double get_objective_value() const { return objective_value; }
+   const std::vector<double>& get_parameters() const { return model.get_parameters(); }
+
 private:
    std::mt19937 generator{};
    int verbosity{0};
+   double objective_value{-1};
    Ipopt_initial_guess initialization{Ipopt_initial_guess::Uniform};
    const OutcomesVector& Y;
    const PredictorsMatrix& X;
@@ -393,6 +399,8 @@ void FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::finali
       for (Index i = 0; i < n; ++i) {
       model.set_parameter(i, x[i]);
       }
+
+      objective_value = obj_value;
    }
 
    if (verbosity > 0) {
@@ -436,6 +444,7 @@ public:
 
    void set_initialization_method(Ipopt_initial_guess i) { initialization = i; }
    void set_max_iterations(int it);
+   void set_n_trials(int n) { n_trials = n; }
    void set_tolerance(double t);
    void set_verbosity(int v) { verbosity = v; }
 
@@ -447,6 +456,7 @@ public:
 private:
    Ipopt_initial_guess initialization{Ipopt_initial_guess::Uniform};
    int verbosity{0};
+   int n_trials{10};
    std::mt19937 generator{};
    Ipopt::SmartPtr<Ipopt::IpoptApplication> ip_solver{};
 };
@@ -464,6 +474,32 @@ bool FEMBVBin_local_model_ipopt_solver::update_local_model(
 
    Ipopt::SmartPtr<Ipopt::TNLP> nlp = new NLP_type(
       Y, X, weights, model, verbosity, initialization, seed);
+
+   if (initialization == Ipopt_initial_guess::Random) {
+      bool success = false;
+      double min_objective = std::numeric_limits<double>::max();
+      std::vector<double> best_parameters(model.get_parameters());
+
+      for (int i = 0; i < n_trials; ++i) {
+         const Ipopt::ApplicationReturnStatus status = ip_solver->OptimizeTNLP(nlp);
+
+         if (status == Ipopt::Solve_Succeeded) {
+            NLP_type* result = static_cast<NLP_type*>(Ipopt::GetRawPtr(nlp));
+            const auto cost = result->get_objective_value();
+            if (!success || cost < min_objective) {
+               min_objective = cost;
+               best_parameters = result->get_parameters();
+               success = true;
+            }
+         }
+      }
+
+      model.set_parameters(best_parameters);
+
+      if (success) {
+         return success;
+      }
+   }
 
    const Ipopt::ApplicationReturnStatus status = ip_solver->OptimizeTNLP(nlp);
 
