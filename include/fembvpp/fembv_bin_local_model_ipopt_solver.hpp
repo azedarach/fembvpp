@@ -227,6 +227,14 @@ bool FEMBVBin_local_nlp<OutcomesVector, PredictorsMatrix, WeightsVector>::get_st
       }
    }
 
+   if (verbosity > 0) {
+      std::cout << "Initial x = ";
+      for (Index i = 0; i < n; ++i) {
+         std::cout << x[i] << ' ';
+      }
+      std::cout << '\n';
+   }
+
    return true;
 }
 
