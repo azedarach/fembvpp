@@ -280,6 +280,7 @@ public:
    void set_parameters_initialization(Ipopt_initial_guess i) {
       parameters_initialization = i;
    }
+   void set_parameters_tolerance(double t) { parameters_tolerance = t; }
 
    double get_cost() const { return cost; }
    double get_log_likelihood_bound() const { return log_likelihood_bound; }
